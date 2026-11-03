@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from app.schemas import AuditVerifyOut
+
 
 GENESIS_HASH = "GENESIS"
 
@@ -38,15 +40,6 @@ class AuditEvent:
     prev_hash: str
     hash: str
     created_at: str
-
-
-@dataclass(frozen=True)
-class AuditVerifyOut:
-    """Result of checking every event in the global audit chain."""
-
-    ok: bool
-    events_checked: int
-    first_bad_event_id: int | None
 
 
 def _canonical_json(payload: dict[str, Any]) -> str:
@@ -138,7 +131,7 @@ def verify_chain(conn: sqlite3.Connection) -> AuditVerifyOut:
     for row in rows:
         event_id = int(row["id"])
         if row["prev_hash"] != expected_prev:
-            return AuditVerifyOut(False, len(rows), event_id)
+            return AuditVerifyOut(ok=False, events_checked=len(rows), first_bad_event_id=event_id)
         try:
             payload = json.loads(row["payload_json"])
             payload_json = _canonical_json(payload)
@@ -152,8 +145,8 @@ def verify_chain(conn: sqlite3.Connection) -> AuditVerifyOut:
                 str(row["created_at"]),
             )
         except (TypeError, ValueError, json.JSONDecodeError):
-            return AuditVerifyOut(False, len(rows), event_id)
+            return AuditVerifyOut(ok=False, events_checked=len(rows), first_bad_event_id=event_id)
         if payload_json != row["payload_json"] or expected_hash != row["hash"]:
-            return AuditVerifyOut(False, len(rows), event_id)
+            return AuditVerifyOut(ok=False, events_checked=len(rows), first_bad_event_id=event_id)
         expected_prev = str(row["hash"])
-    return AuditVerifyOut(True, len(rows), None)
+    return AuditVerifyOut(ok=True, events_checked=len(rows), first_bad_event_id=None)
