@@ -257,7 +257,8 @@ def _detect_single_shift_rules(
 
     max_hours = global_params.max_shift_hours
     window_pad = global_params.window_pad_minutes
-    if shift.gross_minutes > max_hours * 60:
+    max_shift_exceeded = shift.gross_minutes > max_hours * 60
+    if max_shift_exceeded:
         rule = book_rules["MAX-01"]
         out_punch = next(
             punch
@@ -343,7 +344,9 @@ def _detect_single_shift_rules(
             )
         )
 
-    if shift.sched is not None:
+    # MAX-01 already captures the primary defect when an overnight overlong
+    # shift also differs from its scheduled end; avoid a duplicate SCHED-01.
+    if shift.sched is not None and not max_shift_exceeded:
         in_deviation = _minutes(shift.in_ts - shift.sched.start)
         out_deviation = _minutes(shift.out_ts - shift.sched.end)
         deviation_threshold = global_params.sched_deviation_minutes
