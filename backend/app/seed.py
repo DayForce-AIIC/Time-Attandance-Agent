@@ -177,7 +177,8 @@ def _punch_modes(schedules: dict[str, dict[date, tuple[str, str]]]) -> dict[
 
     modes[("e-001", date(2025, 3, 12))] = "missing_out_0856"
     modes[("e-003", date(2025, 3, 11))] = "no_break"
-    modes[("e-004", _MONDAY)] = "normal_zero"
+    for work_date in (date(2025, 3, 10), date(2025, 3, 11), date(2025, 3, 12), _THURSDAY):
+        modes[("e-004", work_date)] = "normal_zero"
     modes[("e-005", date(2025, 3, 11))] = "missing_in"
     modes[("e-006", _MONDAY)] = "duplicate_in"
     modes[("e-007", date(2025, 3, 11))] = "open_break"

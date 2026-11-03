@@ -406,6 +406,7 @@ def _detect_weekly_overtime(
     jurisdiction_params: JurisdictionParams,
     global_params: GlobalParams,
     book_rules: Mapping[str, PolicyRule],
+    suppress_ot02: bool = False,
 ) -> list[DetectedException]:
     threshold = jurisdiction_params.weekly_ot_hours * 60
     complete_week_shifts = [
@@ -459,7 +460,7 @@ def _detect_weekly_overtime(
     ]
     future_minutes = sum(shift.planned_worked_minutes for shift in future_scheduled)
     projected = completed_minutes + incomplete_minutes + future_minutes
-    if projected <= threshold:
+    if projected <= threshold or suppress_ot02:
         return []
 
     rule = book_rules["OT-02"]
@@ -673,6 +674,11 @@ def detect_employee(
                 )
             )
 
+    suppress_weekly_risk = any(
+        finding.rule_id in {"MAX-01", "OT-03"}
+        and start <= finding.work_date <= as_of.date()
+        for finding in detected
+    )
     weekly = _detect_weekly_overtime(
         shifts,
         employee_id,
@@ -682,6 +688,7 @@ def detect_employee(
         jurisdiction_policy,
         global_policy,
         book_rules,
+        suppress_ot02=suppress_weekly_risk,
     )
     detected.extend(weekly)
     detected.extend(

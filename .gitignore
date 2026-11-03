@@ -1,2 +1,4 @@
 AI_Innovation_Challenge_University_Brief 1.pdf
 PROJECT_SPEC.md
+__pycache__/
+*.py[cod]
