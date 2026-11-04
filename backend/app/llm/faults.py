@@ -21,6 +21,8 @@ class FaultInjector:
     def generate(
         self, bundle: PromptBundle, attempt: int, feedback: str | None = None
     ) -> LLMResult:
+        if bundle.context.get("task") == "assistant":
+            return self.inner.generate(bundle, attempt, feedback)
         mode = FaultMode(self.get_mode())
         if mode == FaultMode.TIMEOUT:
             raise LLMTimeout("Simulated LLM timeout")

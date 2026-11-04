@@ -78,6 +78,37 @@ class OllamaClient:
         )
 
 
+def ollama_model_is_available(settings: Settings) -> bool:
+    """Return whether Ollama is reachable and has the configured model installed."""
+    try:
+        response = httpx.get(f"{settings.ollama_url.rstrip('/')}/api/tags", timeout=1.0)
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError):
+        return False
+
+    if not isinstance(payload, dict) or not isinstance(payload.get("models"), list):
+        return False
+
+    configured = _normalize_model_name(settings.ollama_model)
+    available = {
+        _normalize_model_name(str(model[key]))
+        for model in payload["models"]
+        if isinstance(model, dict)
+        for key in ("name", "model")
+        if isinstance(model.get(key), str)
+    }
+    return configured in available
+
+
+def _normalize_model_name(name: str) -> str:
+    """Treat Ollama's omitted tag as its default ``latest`` tag."""
+    normalized = name.strip()
+    if normalized and ":" not in normalized.rsplit("/", 1)[-1]:
+        normalized = f"{normalized}:latest"
+    return normalized
+
+
 def _optional_int(value: Any) -> int | None:
     """Keep usage metadata optional and ignore malformed provider values."""
     return value if isinstance(value, int) and not isinstance(value, bool) else None

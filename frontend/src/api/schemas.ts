@@ -177,6 +177,21 @@ export const policyPassageSchema = z.object({
   text: z.string(),
 });
 
+export const assistantSourceSchema = z.object({
+  source_id: z.string(),
+  kind: z.enum(["case", "policy"]),
+  label: z.string(),
+  excerpt: z.string(),
+  href: z.string().nullable().optional(),
+});
+
+export const assistantAnswerSchema = z.object({
+  answer: z.string(),
+  sources: z.array(assistantSourceSchema),
+  model: z.string(),
+  used_fallback: z.boolean(),
+});
+
 export const decisionOutSchema = z.object({
   id: z.number().int(),
   exception_id: z.number().int(),

@@ -13,6 +13,98 @@
         "title": "Action",
         "type": "string"
       },
+      "AssistantAnswer": {
+        "description": "Read-only answer plus the exact evidence shown to its manager.",
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/AssistantSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "used_fallback": {
+            "title": "Used Fallback",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "sources",
+          "model",
+          "used_fallback"
+        ],
+        "title": "AssistantAnswer",
+        "type": "object"
+      },
+      "AssistantQuestion": {
+        "description": "Bounded manager question for the read-only attendance assistant.",
+        "properties": {
+          "question": {
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "AssistantQuestion",
+        "type": "object"
+      },
+      "AssistantSource": {
+        "description": "One manager-authorized record or policy excerpt used in an answer.",
+        "properties": {
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href"
+          },
+          "kind": {
+            "enum": [
+              "case",
+              "policy"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind",
+          "label",
+          "excerpt"
+        ],
+        "title": "AssistantSource",
+        "type": "object"
+      },
       "AuditEventOut": {
         "properties": {
           "created_at": {
@@ -1427,6 +1519,86 @@
         ]
       }
     },
+    "/api/v1/assistant/query": {
+      "post": {
+        "description": "Answer attendance questions only when the configured Ollama model is available.",
+        "operationId": "assistant_query_api_v1_assistant_query_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantQuestion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantAnswer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Answer a manager's read-only attendance question",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
     "/api/v1/audit/verify": {
       "get": {
         "description": "Recompute and report the integrity of the complete audit chain.",
@@ -2118,7 +2290,7 @@
     },
     "/api/v1/health": {
       "get": {
-        "description": "Report API health and whether the configured LLM provider responds.",
+        "description": "Report API health and whether the configured provider/model is available.",
         "operationId": "health_api_v1_health_get",
         "responses": {
           "200": {

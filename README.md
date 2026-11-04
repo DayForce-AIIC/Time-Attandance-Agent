@@ -19,11 +19,11 @@ ShiftGuard brings the evidence, relevant policy passages, and a validated sugges
 ## User journey
 
 1. A manager opens the queue, where deterministic rules have already identified and sorted exceptions.
-2. The manager opens a case and reviews its punches, schedule, timeline, weekly hours, and policy text alongside an AI proposal and its V-01–V-10 safety checks.
+2. The manager opens a case and reviews its punches, schedule, timeline, weekly hours, and policy text alongside an AI proposal and its V-01–V-10 safety checks. They can ask the read-only assistant a team or policy question and inspect the cited records.
 3. The manager approves, edits, or rejects the proposal. A correction is revalidated and applied only through the manager decision endpoint.
 4. For an overtime-risk case, the manager reviews or edits a proposed schedule end. The simulated timecard must pass the rules checks before the change can be applied.
 5. Demo controls inject model failures. Invalid output is retried once, then escalated without a correction suggestion.
-6. The manager reviews the append-only audit history and verifies its hash chain; the metrics page summarizes safety and workflow outcomes.
+6. The manager reviews the append-only audit history and verifies its hash chain; the metrics page summarizes safety and workflow outcomes. The assistant answers from manager-scoped exception records and policy passages without changing timecards.
 
 ## Architecture and harness principles
 
@@ -46,9 +46,17 @@ flowchart LR
   LLM --> AUDIT
   PARSE --> AUDIT
   DECIDE --> AUDIT
+  UI -->|POST /assistant/query| ASSIST[Read-only assistant]
+  ASSIST -->|Manager-scoped cases| DB
+  ASSIST -->|Relevant passages| RETRIEVE
+  ASSIST --> LLM
+  LLM -->|Answer + source IDs| ASSIST
+  ASSIST -->|Check IDs; show evidence| UI
 ```
 
 The model can explain and propose within deterministic constraints. It cannot write timekeeping records. The rules engine, validator, simulation, and decision endpoint own critical logic; the frontend validates API responses with Zod.
+
+The assistant is a separate read-only path. It runs only when the configured Ollama model is installed and reachable; mock mode and Ollama failures return an unavailable response. Each question is sent directly to Ollama with manager-scoped case and policy evidence. A system prompt directs it to answer attendance and timekeeping questions from that evidence and politely decline unrelated requests. The assistant excludes employee notes and accepts only citations drawn from retrieved sources. Assistant questions and responses are not persisted.
 
 | # | Harness principle | Where it is implemented |
 |---|---|---|
@@ -99,7 +107,7 @@ make frontend
 
 Open [http://localhost:5173](http://localhost:5173). The API documentation is at [http://localhost:8000/docs](http://localhost:8000/docs). `make seed` initializes and detects cases in an empty database; it preserves existing demo records. To restore the demo through the app, use **Reset demo data** (this clears the local demo decisions and records).
 
-The default provider is the offline mock. For optional local inference, install and start Ollama, then run:
+The default provider is the offline mock for the proposal demo; Ask ShiftGuard remains disabled in this mode. To enable Ask ShiftGuard, install and start Ollama, then run:
 
 ```bash
 ollama pull qwen2.5:7b-instruct
@@ -136,6 +144,7 @@ The complete generated contract is [`docs/openapi.json`](docs/openapi.json); the
 | `GET /api/v1/exceptions/{id}` | Case evidence, timecard, policy passages, latest proposal, and decision |
 | `POST /api/v1/exceptions/{id}/propose` | Generate, validate, audit, and persist a proposal |
 | `POST /api/v1/exceptions/{id}/decision` | Approve, edit, or reject; revalidate before applying an allowed correction |
+| `POST /api/v1/assistant/query` | Answer an in-scope manager question through the configured Ollama model; returns 503 in mock mode or when Ollama is unavailable |
 | `GET /api/v1/exceptions/{id}/audit` | Case audit events |
 | `GET /api/v1/employees/{employee_id}/timecard` | Employee timecard records for a week |
 | `GET /api/v1/policies` and `GET /api/v1/policies/{policy_id}` | Structured policy passages |
@@ -152,7 +161,7 @@ make eval
 make all
 ```
 
-`make test` runs backend unit, API integration, and OpenAPI contract tests with an 85% coverage floor, followed by the Vitest/React Testing Library suite. `make eval` runs 48 labelled scenarios through the mock-provider pipeline and independent safety oracle. `make all` adds Ruff lint/format, mypy, OpenAPI and generated-type sync checks, then runs all three CI job suites. The GitHub Actions workflow has separate backend, evaluation, and frontend jobs.
+`make test` runs backend unit, API integration, and OpenAPI contract tests with an 85% coverage floor, followed by the Vitest/React Testing Library suite. Assistant integration checks cover source grounding, manager scoping, read-only behavior, and unsupported absence/leave questions. `make eval` runs 48 labelled scenarios through the mock-provider proposal pipeline and independent safety oracle. `make all` adds Ruff lint/format, mypy, OpenAPI and generated-type sync checks, then runs all three CI job suites. The GitHub Actions workflow has separate backend, evaluation, and frontend jobs.
 
 ## Evaluation results
 
@@ -182,7 +191,7 @@ Fault-injection outcomes from [`eval/results.md`](eval/results.md):
 | `bad_then_good` | 0.0% | 100.0% (10/10) | 0 |
 | `naive_latest` | 20.0% (2/10) | 0.0% | 0 |
 
-The current local suite has 72 backend tests at 88.62% coverage and 9 frontend tests. Reproduce the evaluation with `make eval`; the detailed gates and method are in [`eval/results.md`](eval/results.md).
+The current local suite has 77 backend tests at 88.57% coverage and 10 frontend tests. Reproduce the evaluation with `make eval`; the detailed gates and method are in [`eval/results.md`](eval/results.md). The mock evaluation measures the proposal pipeline; it does not claim accuracy for assistant summaries or real-model behavior.
 
 ## Safety and guardrails
 
@@ -192,6 +201,8 @@ The current local suite has 72 backend tests at 88.62% coverage and 9 frontend t
 - Invalid output gets one retry. A second failure creates an `ESCALATE` fallback with no suggested timecard correction.
 - Approve and edit requests are validated again at decision time. Rejection needs a note; repeated decisions are rejected by state checks.
 - Proposals and decisions are auditable. SQLite blocks ordinary audit-row updates/deletes, and the verify endpoint recomputes the chain.
+- Assistant retrieval is filtered by manager ownership; model citations are limited to source IDs returned with the answer. The assistant cannot approve or write corrections, and questions about individual absence predictions or unmodeled WFH/leave statuses receive a clear limitation response.
+- Model answers can still misstate what a cited passage means. Managers should verify the displayed excerpts before acting; all timecard changes still go through the separate deterministic validation and decision path.
 
 ## Model licence
 
@@ -199,15 +210,15 @@ Mock inference is the default and requires no model weights or external service.
 
 ## Limitations and future work
 
-The prototype uses synthetic data and a demo `X-Manager-Id` header; it has no real authentication, identity-backed access control, or tenant isolation. Times are naive site-local values. Payroll calculation, daylight-saving transitions, multiple shifts per day, mobile layouts, and internationalization are out of scope. Do not use the local demo with real employee records or expose it to the public internet.
+The prototype uses synthetic data and a demo `X-Manager-Id` header; it has no real authentication, identity-backed access control, or tenant isolation. Times are naive site-local values. It does not model WFH, leave, half/full-day statuses, employee availability, staffing coverage targets, or individual absence forecasts. Payroll calculation, daylight-saving transitions, multiple shifts per day, mobile layouts, and internationalization are out of scope. Do not use the local demo with real employee records or expose it to the public internet.
 
-Future work could add real timekeeping integrations, additional jurisdictions and policy handbooks, stronger identity and access controls, time-zone-aware shifts, multiple shifts per day, and carefully governed learning from manager edits.
+Future work could add real timekeeping integrations, additional jurisdictions and policy handbooks, stronger identity and access controls, time-zone-aware shifts, multiple shifts per day, explicit WFH/leave records, staffing targets and employee availability for whole-team schedule optimization, and carefully governed learning from manager edits. Individual absence forecasts would require reliable labeled data and fairness evaluation before use.
 
 ## Project layout
 
 ```text
-backend/        FastAPI API, policy data, rules, proposal pipeline, decisions, and tests
-frontend/       React + TypeScript manager workflow and frontend tests
+backend/        FastAPI API, policy data, rules, proposal pipeline, decisions, assistant, and tests
+frontend/       React + TypeScript manager workflow, read-only assistant, and frontend tests
 docs/           OpenAPI contract, architecture, decisions, license note, demo, and slides
 eval/           Labelled cases, independent oracle, evaluation runner, and results
 ```

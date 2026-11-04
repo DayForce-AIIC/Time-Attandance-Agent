@@ -3,7 +3,7 @@
 import json
 from datetime import datetime, timedelta
 
-from app.llm.base import LLMResult, PromptBundle
+from app.llm.base import LLMResult, LLMUnavailable, PromptBundle
 from app.schemas import Action, LLMProposal, ProposedCorrection, PunchKind
 
 
@@ -18,6 +18,11 @@ class MockClient:
         """Read the trusted prompt context and return schema-shaped JSON."""
         del attempt, feedback
         context = bundle.context
+        assistant = context.get("task") == "assistant"
+        if assistant:
+            raise LLMUnavailable(
+                "Ask ShiftGuard requires the configured Ollama model; mock answers are disabled."
+            )
         exception = context["exception"]
         constraints = context["constraints"]
         schedule = context.get("schedule")

@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 def _validate_local_ts(value: str) -> str:
@@ -174,6 +174,51 @@ class PolicyPassage(BaseModel):
     policy_id: str
     title: str
     text: str
+
+
+class AssistantQuestion(BaseModel):
+    """Bounded manager question for the read-only attendance assistant."""
+
+    question: str = Field(min_length=3, max_length=500)
+
+    @field_validator("question")
+    @classmethod
+    def question_has_content(cls, value: str) -> str:
+        """Reject whitespace-only questions before retrieval or model calls."""
+        cleaned = value.strip()
+        if len(cleaned) < 3:
+            raise ValueError("question must contain at least three non-space characters")
+        return cleaned
+
+
+class AssistantSource(BaseModel):
+    """One manager-authorized record or policy excerpt used in an answer."""
+
+    source_id: str
+    kind: Literal["case", "policy"]
+    label: str
+    excerpt: str
+    href: str | None = None
+
+
+class AssistantModelAnswer(BaseModel):
+    """Strict model response contract for the single-call attendance assistant."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    in_scope: bool = Field(description="Whether the user's question is relevant to attendance.")
+    uses_evidence: bool = Field(description="Whether the answer relies on supplied evidence sources.")
+    answer: str = Field(min_length=5, max_length=1200)
+    source_ids: list[str] = Field(max_length=55)
+
+
+class AssistantAnswer(BaseModel):
+    """Read-only answer plus the exact evidence shown to its manager."""
+
+    answer: str
+    sources: list[AssistantSource]
+    model: str
+    used_fallback: bool
 
 
 class PunchOut(BaseModel):

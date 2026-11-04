@@ -48,6 +48,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assistant/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a manager's read-only attendance question
+         * @description Answer attendance questions only when the configured Ollama model is available.
+         */
+        post: operations["assistant_query_api_v1_assistant_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit/verify": {
         parameters: {
             query?: never;
@@ -217,7 +237,7 @@ export interface paths {
         };
         /**
          * Check API and LLM availability
-         * @description Report API health and whether the configured LLM provider responds.
+         * @description Report API health and whether the configured provider/model is available.
          */
         get: operations["health_api_v1_health_get"];
         put?: never;
@@ -297,6 +317,47 @@ export interface components {
          * @enum {string}
          */
         Action: "ADD_PUNCH" | "MODIFY_PUNCH" | "REMOVE_PUNCH" | "ADJUST_SCHEDULE" | "FLAG_FOR_APPROVAL" | "ESCALATE";
+        /**
+         * AssistantAnswer
+         * @description Read-only answer plus the exact evidence shown to its manager.
+         */
+        AssistantAnswer: {
+            /** Answer */
+            answer: string;
+            /** Model */
+            model: string;
+            /** Sources */
+            sources: components["schemas"]["AssistantSource"][];
+            /** Used Fallback */
+            used_fallback: boolean;
+        };
+        /**
+         * AssistantQuestion
+         * @description Bounded manager question for the read-only attendance assistant.
+         */
+        AssistantQuestion: {
+            /** Question */
+            question: string;
+        };
+        /**
+         * AssistantSource
+         * @description One manager-authorized record or policy excerpt used in an answer.
+         */
+        AssistantSource: {
+            /** Excerpt */
+            excerpt: string;
+            /** Href */
+            href?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "case" | "policy";
+            /** Label */
+            label: string;
+            /** Source Id */
+            source_id: string;
+        };
         /** AuditEventOut */
         AuditEventOut: {
             /** Created At */
@@ -828,6 +889,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assistant_query_api_v1_assistant_query_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Manager-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssistantQuestion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssistantAnswer"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

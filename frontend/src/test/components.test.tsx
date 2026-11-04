@@ -1,10 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiFetch, ApiError } from "../api/client";
 import { auditEventSchema, healthSchema, proposalOutSchema } from "../api/schemas";
 import { DecisionPanel } from "../components/DecisionPanel";
+import { AssistantPage } from "../pages/AssistantPage";
 import { EditCorrectionForm } from "../components/EditCorrectionForm";
 import { ExceptionTable } from "../components/ExceptionTable";
 import { ManagerSwitcher } from "../components/ManagerSwitcher";
@@ -126,5 +128,39 @@ describe("manager review components", () => {
     await apiFetch("/api/v1/health", {}, healthSchema);
     const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
     expect(new Headers(init.headers).get("X-Manager-Id")).toBe("m-002");
+  });
+
+  it("AssistantPage shows a read-only answer with its case source", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        answer: "Priya Raman has an open missing out-punch case.",
+        sources: [{
+          source_id: "case:1",
+          kind: "case",
+          label: "Priya Raman · PUNCH-01 · 2025-03-12",
+          excerpt: "Manager-scoped timecard evidence.",
+          href: "/exceptions/1",
+        }],
+        model: "mock",
+        used_fallback: false,
+      }),
+    }));
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManagerProvider>
+          <MemoryRouter><AssistantPage /></MemoryRouter>
+        </ManagerProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Show me the open cases for Priya Raman." }));
+
+    expect(await screen.findByText("Priya Raman has an open missing out-punch case.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Priya Raman · PUNCH-01/ })).toHaveAttribute("href", "/exceptions/1");
+    expect(screen.getByText(/The assistant cannot change timecards or approve decisions/)).toBeInTheDocument();
   });
 });

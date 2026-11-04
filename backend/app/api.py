@@ -7,10 +7,10 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from typing import Literal
 
-import httpx
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app import repo
+from app.assistant import answer_attendance_question
 from app.audit import verify_chain
 from app.clock import Clock
 from app.config import Settings
@@ -28,10 +28,14 @@ from app.deps import (
 from app.detection import run_detection
 from app.engine.shifts import build_shifts
 from app.errors import Forbidden, NotFound
+from app.llm.base import LLMTimeout, LLMUnavailable
+from app.llm.ollama import ollama_model_is_available
 from app.metrics import calculate_metrics
 from app.pipeline import propose
 from app.policies import PolicyBook, all_passages, get_rule, retrieve_policies
 from app.schemas import (
+    AssistantAnswer,
+    AssistantQuestion,
     AuditEventOut,
     AuditVerifyOut,
     DecisionIn,
@@ -60,20 +64,56 @@ from app.seed import seed
 router = APIRouter(prefix="/api/v1")
 
 
+@router.post(
+    "/assistant/query",
+    response_model=AssistantAnswer,
+    summary="Answer a manager's read-only attendance question",
+    tags=["assistant"],
+    responses={403: {"model": ErrorOut}, 503: {"model": ErrorOut}},
+)
+def assistant_query(
+    body: AssistantQuestion,
+    conn: sqlite3.Connection = Depends(get_conn),
+    manager_id: str = Depends(current_manager),
+    llm=Depends(get_llm),
+    book: PolicyBook = Depends(get_book),
+    settings: Settings = Depends(get_settings),
+) -> AssistantAnswer:
+    """Answer attendance questions only when the configured Ollama model is available."""
+    if settings.llm_provider != "ollama":
+        raise HTTPException(
+            status_code=503,
+            detail="Ask ShiftGuard requires Ollama. Switch from mock mode and restart the backend.",
+        )
+    if not ollama_model_is_available(settings):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"The configured Ollama model '{settings.ollama_model}' is unavailable. "
+                "Start Ollama and make sure the model is installed, then try again."
+            ),
+        )
+    try:
+        return answer_attendance_question(conn, manager_id, body.question.strip(), llm, book)
+    except (LLMTimeout, LLMUnavailable) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Ollama did not return a valid answer. Check the model and try again.",
+        ) from exc
+
+
 @router.get(
     "/health", response_model=HealthOut, summary="Check API and LLM availability", tags=["health"]
 )
 def health(
     settings: Settings = Depends(get_settings), clock: Clock = Depends(get_clock)
 ) -> HealthOut:
-    """Report API health and whether the configured LLM provider responds."""
-    reachable = True
-    if settings.llm_provider == "ollama":
-        try:
-            response = httpx.get(f"{settings.ollama_url.rstrip('/')}/api/tags", timeout=1.0)
-            response.raise_for_status()
-        except httpx.HTTPError:
-            reachable = False
+    """Report API health and whether the configured provider/model is available."""
+    reachable = (
+        True
+        if settings.llm_provider == "mock"
+        else ollama_model_is_available(settings)
+    )
     return HealthOut(
         status="ok",
         provider=settings.llm_provider,

@@ -3,6 +3,7 @@ import { apiFetch } from "./client";
 import {
   auditEventSchema,
   auditVerifySchema,
+  assistantAnswerSchema,
   decisionOutSchema,
   exceptionDetailSchema,
   exceptionOutSchema,
@@ -112,6 +113,15 @@ export function useAudit(id: number, enabled = true) {
 
 export function useMetrics() {
   return useQuery({ queryKey: ["metrics"], queryFn: () => apiFetch(`${API}/metrics`, {}, metricsSchema) });
+}
+
+export function useAssistantQuery() {
+  return useMutation({
+    mutationFn: (question: string) => apiFetch(`${API}/assistant/query`, {
+      method: "POST",
+      body: JSON.stringify({ question }),
+    }, assistantAnswerSchema),
+  });
 }
 
 export function useHealth() {

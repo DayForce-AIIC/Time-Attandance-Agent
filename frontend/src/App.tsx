@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppHeader } from "./components/AppHeader";
 import { ManagerProvider } from "./context/ManagerContext";
+import { AssistantPage } from "./pages/AssistantPage";
 import { CasePage } from "./pages/CasePage";
 import { MetricsPage } from "./pages/MetricsPage";
 import { QueuePage } from "./pages/QueuePage";
@@ -13,6 +14,7 @@ export function App() {
           <AppHeader />
           <Routes>
             <Route path="/" element={<QueuePage />} />
+            <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/exceptions/:id" element={<CasePage />} />
             <Route path="/metrics" element={<MetricsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

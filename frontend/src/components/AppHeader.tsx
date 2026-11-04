@@ -26,6 +26,7 @@ export function AppHeader() {
         </NavLink>
         <nav aria-label="Primary navigation" className="primary-nav">
           <NavLink to="/" end>Queue</NavLink>
+          <NavLink to="/assistant">Ask ShiftGuard</NavLink>
           <NavLink to="/metrics">Metrics</NavLink>
         </nav>
         <div className="header-tools">
