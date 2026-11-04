@@ -1,4 +1,37 @@
+# User-provided challenge documents
 AI_Innovation_Challenge_University_Brief 1.pdf
 PROJECT_SPEC.md
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.py[cod]
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# SQLite data and journals
+*.db
+*.db-shm
+*.db-wal
+
+# Node, Vite, and TypeScript build output
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# OS-generated files
+.DS_Store
