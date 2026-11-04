@@ -167,6 +167,61 @@ def get_exception_by_fingerprint(
     ).fetchone()
 
 
+def get_exception(conn: sqlite3.Connection, exception_id: int) -> sqlite3.Row | None:
+    """Load one exception by its primary key."""
+    return conn.execute("SELECT * FROM exceptions WHERE id = ?", (exception_id,)).fetchone()
+
+
+def get_employee(conn: sqlite3.Connection, employee_id: str) -> sqlite3.Row | None:
+    """Load an employee by ID."""
+    return conn.execute("SELECT * FROM employees WHERE id = ?", (employee_id,)).fetchone()
+
+
+def get_employee_note(
+    conn: sqlite3.Connection, employee_id: str, work_date: date
+) -> str | None:
+    """Return the most recently recorded note for one employee and work date."""
+    row = conn.execute(
+        """SELECT text FROM employee_notes
+           WHERE employee_id = ? AND work_date = ? ORDER BY id DESC LIMIT 1""",
+        (employee_id, work_date.isoformat()),
+    ).fetchone()
+    return str(row["text"]) if row is not None else None
+
+
+def create_proposal(
+    conn: sqlite3.Connection,
+    exception_id: int,
+    trace_id: str,
+    source: str,
+    proposal_json: str,
+    validation_json: str,
+    attempts: int,
+    model: str,
+    latency_ms: int,
+    created_at: str,
+) -> int:
+    """Persist one generated proposal and return its database ID."""
+    cursor = conn.execute(
+        """INSERT INTO proposals
+           (exception_id, trace_id, source, proposal_json, validation_json,
+            attempts, model, latency_ms, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            exception_id,
+            trace_id,
+            source,
+            proposal_json,
+            validation_json,
+            attempts,
+            model,
+            latency_ms,
+            created_at,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
 def create_exception(
     conn: sqlite3.Connection,
     fingerprint: str,
