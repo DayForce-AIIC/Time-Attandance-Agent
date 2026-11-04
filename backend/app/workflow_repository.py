@@ -31,11 +31,18 @@ class PostgresWorkflowRepository:
         self.connection = connection
 
     @classmethod
-    def connect(cls, database_url: str) -> PostgresWorkflowRepository:
+    def connect(cls, database_url: str, *, connect_timeout: int = 5) -> PostgresWorkflowRepository:
         """Open a connection configured to return rows as dictionaries."""
         import psycopg
 
-        return cls(psycopg.connect(database_url, row_factory=dict_row, autocommit=True))
+        return cls(
+            psycopg.connect(
+                database_url,
+                row_factory=dict_row,
+                autocommit=True,
+                connect_timeout=connect_timeout,
+            )
+        )
 
     @classmethod
     def from_settings(cls, settings: Settings) -> PostgresWorkflowRepository:
@@ -43,7 +50,7 @@ class PostgresWorkflowRepository:
         database_url = settings.supabase_database_url
         if database_url is None or not database_url.get_secret_value().strip():
             raise RuntimeError("SUPABASE_DATABASE_URL is not configured")
-        return cls.connect(database_url.get_secret_value())
+        return cls.connect(database_url.get_secret_value(), connect_timeout=5)
 
     def close(self) -> None:
         """Close the underlying database connection."""
@@ -58,6 +65,14 @@ class PostgresWorkflowRepository:
             if row is None:
                 raise RuntimeError("organization insert did not return an ID")
             return UUID(str(row["id"]))
+
+    def get_user_profile(self, user_id: UUID) -> Row | None:
+        """Load the server-managed organization and role mapping for an Auth user."""
+        return self.connection.execute(
+            """SELECT user_id, organization_id, role, manager_ref
+               FROM public.user_profiles WHERE user_id = %s""",
+            (user_id,),
+        ).fetchone()
 
     def create_integration(
         self,
@@ -332,7 +347,9 @@ class PostgresWorkflowRepository:
         exception_case_id: UUID | None = None,
     ) -> Row:
         """Append a tenant-scoped hash-chained event under a transaction lock."""
-        payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        payload_json = json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
         with self.connection.transaction():
             self.connection.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",

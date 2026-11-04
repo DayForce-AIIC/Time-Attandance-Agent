@@ -5,3 +5,4 @@ pydantic-settings>=2.2
 python-dotenv
 httpx
 psycopg[binary]>=3.2,<4
+PyJWT[crypto]>=2.15,<3

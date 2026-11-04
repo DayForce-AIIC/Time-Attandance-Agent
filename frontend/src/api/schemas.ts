@@ -256,6 +256,14 @@ export const healthSchema = z.object({
   now: timestamp,
 });
 
+export const currentUserSchema = z.object({
+  user_id: z.string(),
+  organization_id: z.string().nullable(),
+  role: z.enum(["HR", "manager", "integration_service"]),
+  manager_ref: z.string().nullable(),
+  email: z.string().nullable(),
+});
+
 export const llmModeSchema = z.object({ mode: faultModeSchema, provider: z.string(), model: z.string() });
 export const errorOutSchema = z.object({
   detail: z.string(),

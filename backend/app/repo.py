@@ -196,9 +196,12 @@ def list_exceptions_for_manager(
     limit: int = 50,
     offset: int = 0,
 ) -> list[sqlite3.Row]:
-    """List filtered exceptions belonging to one manager's team."""
-    clauses = ["e.manager_id = ?"]
-    params: list[object] = [manager_id]
+    """List filtered exceptions for one manager or all teams for HR."""
+    clauses: list[str] = []
+    params: list[object] = []
+    if manager_id != "*":
+        clauses.append("e.manager_id = ?")
+        params.append(manager_id)
     for column, value in (
         ("x.status", status),
         ("x.severity", severity),
@@ -212,7 +215,7 @@ def list_exceptions_for_manager(
     return conn.execute(
         f"""SELECT x.*, e.name AS employee_name
             FROM exceptions AS x JOIN employees AS e ON e.id = x.employee_id
-            WHERE {" AND ".join(clauses)}
+            WHERE {" AND ".join(clauses) if clauses else "1 = 1"}
             ORDER BY CASE x.severity WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END DESC,
                      x.work_date ASC, x.id ASC
             LIMIT ? OFFSET ?""",

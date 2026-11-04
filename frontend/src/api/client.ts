@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { errorOutSchema, type CheckResult } from "./schemas";
+import { getSupabaseAccessToken, supabaseAuthEnabled } from "../auth/client";
 
 const MANAGER_STORAGE_KEY = "shiftguard.managerId";
 const DEFAULT_MANAGER_ID = "m-001";
@@ -60,7 +61,16 @@ export async function apiFetch(
 ): Promise<unknown> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  headers.set("X-Manager-Id", getRequestManagerId());
+  if (supabaseAuthEnabled) {
+    try {
+      const accessToken = await getSupabaseAccessToken();
+      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    } catch {
+      throw new ApiError(401, "Your sign-in session could not be refreshed. Sign in again.", "unauthorized");
+    }
+  } else {
+    headers.set("X-Manager-Id", getRequestManagerId());
+  }
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }

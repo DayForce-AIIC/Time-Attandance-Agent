@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { useDetect, useHealth, useLlmMode, useResetDemo, useSetLlmMode } from "../api/hooks";
+import { useCurrentUser, useDetect, useHealth, useLlmMode, useResetDemo, useSetLlmMode } from "../api/hooks";
 import type { FaultMode } from "../api/schemas";
+import { useAuth } from "../auth/AuthContext";
 import { ManagerSwitcher } from "./ManagerSwitcher";
 import { ErrorBanner } from "./common";
 
@@ -15,8 +16,10 @@ const FAULT_MODES: { value: FaultMode; label: string }[] = [
 ];
 
 export function AppHeader() {
+  const auth = useAuth();
+  const currentUser = useCurrentUser(auth.enabled);
   const health = useHealth();
-  const llmMode = useLlmMode();
+  const llmMode = useLlmMode(!auth.enabled);
   return (
     <header className="app-header">
       <div className="header-main">
@@ -27,7 +30,7 @@ export function AppHeader() {
         <nav aria-label="Primary navigation" className="primary-nav">
           <NavLink to="/" end>Queue</NavLink>
           <NavLink to="/assistant">Ask ShiftGuard</NavLink>
-          <NavLink to="/metrics">Metrics</NavLink>
+          {!auth.enabled || currentUser.data?.role === "HR" ? <NavLink to="/metrics">Metrics</NavLink> : null}
         </nav>
         <div className="header-tools">
           <div className={`health-pill ${health.data?.llm_reachable ? "is-reachable" : "is-unreachable"}`} title={health.error ? "API health could not be loaded" : undefined}>
@@ -35,10 +38,15 @@ export function AppHeader() {
             <span>{health.data ? `${health.data.provider} / ${health.data.model}` : "API status loading"}</span>
             <span className="health-state">{health.data?.llm_reachable ? "reachable" : health.data ? "unreachable" : "checking"}</span>
           </div>
-          <ManagerSwitcher />
+          {auth.enabled ? (
+            <div className="authenticated-user">
+              <span>{currentUser.data?.email ?? "Signed in"}<small>{currentUser.data?.role ?? ""}</small></span>
+              <button type="button" className="button button-quiet" onClick={() => void auth.signOut()}>Sign out</button>
+            </div>
+          ) : <ManagerSwitcher />}
         </div>
       </div>
-      {llmMode.data ? <DemoControls initialMode={llmMode.data.mode} /> : null}
+      {!auth.enabled && llmMode.data ? <DemoControls initialMode={llmMode.data.mode} /> : null}
     </header>
   );
 }

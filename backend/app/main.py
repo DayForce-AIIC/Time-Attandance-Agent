@@ -37,6 +37,19 @@ DESCRIPTION = (
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create a fully configured ShiftGuard API application."""
     runtime_settings = settings or get_settings()
+    if runtime_settings.auth_mode == "supabase":
+        missing_auth_settings = []
+        if not runtime_settings.supabase_url or not runtime_settings.supabase_url.strip():
+            missing_auth_settings.append("SUPABASE_URL")
+        if (
+            runtime_settings.supabase_database_url is None
+            or not runtime_settings.supabase_database_url.get_secret_value().strip()
+        ):
+            missing_auth_settings.append("SUPABASE_DATABASE_URL")
+        if runtime_settings.auth_organization_id is None:
+            missing_auth_settings.append("AUTH_ORGANIZATION_ID")
+        if missing_auth_settings:
+            raise ValueError("AUTH_MODE=supabase requires: " + ", ".join(missing_auth_settings))
     configure_logging()
     book = load_policies()
     db_path: str | Path = runtime_settings.db_path
@@ -72,8 +85,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(router)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
-        allow_credentials=True,
+        allow_origins=[
+            origin.strip() for origin in runtime_settings.cors_origins.split(",") if origin.strip()
+        ],
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -133,7 +148,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(HTTPException)
     async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
-        code = {403: "forbidden", 404: "not_found"}.get(exc.status_code, "http_error")
+        code = {
+            401: "unauthorized",
+            403: "forbidden",
+            404: "not_found",
+            503: "service_unavailable",
+        }.get(exc.status_code, "http_error")
         return _error_response(exc.status_code, str(exc.detail), code)
 
     return application

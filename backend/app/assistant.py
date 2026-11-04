@@ -111,10 +111,15 @@ def _retrieve_sources(
 ) -> list[AssistantSource]:
     """Select only the manager's relevant cases and matching policy passages."""
     normalized = question.casefold()
-    employees = conn.execute(
-        "SELECT id, name, jurisdiction FROM employees WHERE manager_id = ? ORDER BY id",
-        (manager_id,),
-    ).fetchall()
+    if manager_id == "*":
+        employees = conn.execute(
+            "SELECT id, name, jurisdiction FROM employees ORDER BY id"
+        ).fetchall()
+    else:
+        employees = conn.execute(
+            "SELECT id, name, jurisdiction FROM employees WHERE manager_id = ? ORDER BY id",
+            (manager_id,),
+        ).fetchall()
     employee_rows = {str(row["id"]): row for row in employees}
     all_employees = conn.execute("SELECT id, name FROM employees ORDER BY id").fetchall()
     employee_mentioned = any(

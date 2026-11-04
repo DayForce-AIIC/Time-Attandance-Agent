@@ -99,7 +99,7 @@ export interface paths {
         put?: never;
         /**
          * Run exception detection
-         * @description Run deterministic timecard checks and persist current findings.
+         * @description Run deterministic checks only for the authenticated user's permitted team.
          */
         post: operations["detect_api_v1_detect_post"];
         delete?: never;
@@ -240,6 +240,26 @@ export interface paths {
          * @description Report API health and whether the configured provider/model is available.
          */
         get: operations["health_api_v1_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated ShiftGuard user and role
+         * @description Return the backend-verified user profile used to authorize API requests.
+         */
+        get: operations["current_user_api_v1_me_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -423,6 +443,25 @@ export interface components {
             /** Target Schedule Id */
             target_schedule_id?: number | null;
             ts_window?: components["schemas"]["TimeWindow"] | null;
+        };
+        /**
+         * CurrentUserOut
+         * @description Authenticated principal resolved from Supabase Auth and user_profiles.
+         */
+        CurrentUserOut: {
+            /** Email */
+            email?: string | null;
+            /** Manager Ref */
+            manager_ref?: string | null;
+            /** Organization Id */
+            organization_id: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "HR" | "manager" | "integration_service";
+            /** User Id */
+            user_id: string;
         };
         /**
          * DecisionAction
@@ -799,9 +838,7 @@ export interface operations {
     get_llm_mode_api_v1_admin_llm_mode_get: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -816,23 +853,12 @@ export interface operations {
                     "application/json": components["schemas"]["LLMModeOut"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
         };
     };
     set_llm_mode_api_v1_admin_llm_mode_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -865,9 +891,7 @@ export interface operations {
     reset_demo_api_v1_admin_reset_demo_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -882,23 +906,12 @@ export interface operations {
                     "application/json": components["schemas"]["DetectOut"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
         };
     };
     assistant_query_api_v1_assistant_query_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -969,9 +982,7 @@ export interface operations {
     detect_api_v1_detect_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -1006,9 +1017,7 @@ export interface operations {
             query?: {
                 week_start?: string | null;
             };
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
                 employee_id: string;
             };
@@ -1064,9 +1073,7 @@ export interface operations {
                 limit?: number;
                 offset?: number;
             };
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -1104,9 +1111,7 @@ export interface operations {
     exception_detail_api_v1_exceptions__exception_id__get: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
                 exception_id: number;
             };
@@ -1155,9 +1160,7 @@ export interface operations {
     exception_audit_api_v1_exceptions__exception_id__audit_get: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
                 exception_id: number;
             };
@@ -1206,9 +1209,7 @@ export interface operations {
     create_decision_api_v1_exceptions__exception_id__decision_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
                 exception_id: number;
             };
@@ -1279,9 +1280,7 @@ export interface operations {
     create_proposal_api_v1_exceptions__exception_id__propose_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
                 exception_id: number;
             };
@@ -1352,6 +1351,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    current_user_api_v1_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUserOut"];
                 };
             };
         };

@@ -308,6 +308,64 @@
         "title": "Constraints",
         "type": "object"
       },
+      "CurrentUserOut": {
+        "description": "Authenticated principal resolved from Supabase Auth and user_profiles.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "manager_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Ref"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "role": {
+            "enum": [
+              "HR",
+              "manager",
+              "integration_service"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "organization_id",
+          "role"
+        ],
+        "title": "CurrentUserOut",
+        "type": "object"
+      },
       "DecisionAction": {
         "enum": [
           "approve",
@@ -1352,6 +1410,12 @@
         "title": "ValidationResult",
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
     }
   },
   "info": {
@@ -1365,24 +1429,6 @@
       "get": {
         "description": "Return the active simulation mode when demo controls are enabled.",
         "operationId": "get_llm_mode_api_v1_admin_llm_mode_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -1393,18 +1439,13 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Read the demo LLM fault mode",
         "tags": [
           "admin"
@@ -1413,24 +1454,6 @@
       "post": {
         "description": "Set the active fault mode and record the change in the audit trail.",
         "operationId": "set_llm_mode_api_v1_admin_llm_mode_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1463,6 +1486,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Change the demo LLM fault mode",
         "tags": [
           "admin"
@@ -1473,24 +1501,6 @@
       "post": {
         "description": "Recreate the demo data, reset fault injection, and run initial detection.",
         "operationId": "reset_demo_api_v1_admin_reset_demo_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -1501,18 +1511,13 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Reset and reseed the demo database",
         "tags": [
           "admin"
@@ -1523,24 +1528,6 @@
       "post": {
         "description": "Answer attendance questions only when the configured Ollama model is available.",
         "operationId": "assistant_query_api_v1_assistant_query_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1593,6 +1580,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Answer a manager's read-only attendance question",
         "tags": [
           "assistant"
@@ -1615,6 +1607,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Verify the audit hash chain",
         "tags": [
           "audit"
@@ -1623,26 +1620,8 @@
     },
     "/api/v1/detect": {
       "post": {
-        "description": "Run deterministic timecard checks and persist current findings.",
+        "description": "Run deterministic checks only for the authenticated user's permitted team.",
         "operationId": "detect_api_v1_detect_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1675,6 +1654,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Run exception detection",
         "tags": [
           "exceptions"
@@ -1710,22 +1694,6 @@
                 }
               ],
               "title": "Week Start"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
             }
           }
         ],
@@ -1771,6 +1739,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get an employee's weekly timecard",
         "tags": [
           "timecards"
@@ -1868,22 +1841,6 @@
               "title": "Offset",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
-            }
           }
         ],
         "responses": {
@@ -1922,6 +1879,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List the current manager's exceptions",
         "tags": [
           "exceptions"
@@ -1940,22 +1902,6 @@
             "schema": {
               "title": "Exception Id",
               "type": "integer"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
             }
           }
         ],
@@ -2001,6 +1947,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get exception evidence and review context",
         "tags": [
           "exceptions"
@@ -2019,22 +1970,6 @@
             "schema": {
               "title": "Exception Id",
               "type": "integer"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
             }
           }
         ],
@@ -2084,6 +2019,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List audit events for an exception",
         "tags": [
           "audit"
@@ -2102,22 +2042,6 @@
             "schema": {
               "title": "Exception Id",
               "type": "integer"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
             }
           }
         ],
@@ -2193,6 +2117,11 @@
             "description": "Unprocessable Content"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Approve, edit, or reject a proposal",
         "tags": [
           "decisions"
@@ -2211,22 +2140,6 @@
             "schema": {
               "title": "Exception Id",
               "type": "integer"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Manager-Id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Manager-Id"
             }
           }
         ],
@@ -2282,6 +2195,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Generate a validated manager proposal",
         "tags": [
           "proposals"
@@ -2310,6 +2228,33 @@
         ]
       }
     },
+    "/api/v1/me": {
+      "get": {
+        "description": "Return the backend-verified user profile used to authorize API requests.",
+        "operationId": "current_user_api_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get the authenticated ShiftGuard user and role",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/metrics": {
       "get": {
         "description": "Report proposal throughput, review outcomes, savings, and current risk.",
@@ -2326,6 +2271,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get workflow and safety metrics",
         "tags": [
           "metrics"

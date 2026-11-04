@@ -131,6 +131,10 @@ make supabase-db-push
 
 Keep the server-side PostgreSQL connection string in `.env` as `SUPABASE_DATABASE_URL`; never expose it through the frontend. The current demo API remains on SQLite while the HR connector and signed-in organization context are implemented in later steps, so applying the migration alone does not switch the running demo to Supabase.
 
+### Supabase Auth mode
+
+The default `AUTH_MODE=demo` keeps the synthetic prototype and manager switcher. To enable HR sign-in, provision Supabase Auth users and server-managed `user_profiles`, then follow [`docs/AUTH_SETUP.md`](docs/AUTH_SETUP.md). The API verifies Supabase bearer tokens and uses each profile's role and manager reference; it ignores `X-Manager-Id` in this mode. This stage pins each API process to one configured organization because attendance and case data have not yet moved to the company connector and tenant-scoped PostgreSQL repository.
+
 ## Demo walkthrough
 
 The demo controls appear when the backend's admin demo endpoint is available. Select a fault in **LLM fault mode**, then generate a proposal for an open case. The selected mode is recorded in the audit log.
@@ -225,7 +229,7 @@ Mock inference is the default and requires no model weights or external service.
 
 ## Limitations and future work
 
-The prototype uses synthetic data and a demo `X-Manager-Id` header; it has no real authentication, identity-backed access control, or tenant isolation. Times are naive site-local values. It does not model WFH, leave, half/full-day statuses, employee availability, staffing coverage targets, or individual absence forecasts. Payroll calculation, daylight-saving transitions, multiple shifts per day, mobile layouts, and internationalization are out of scope. Do not use the local demo with real employee records or expose it to the public internet.
+The default demo uses synthetic data and a demo `X-Manager-Id` header. `AUTH_MODE=supabase` adds verified sign-in and role/team checks for one configured organization, but the case API still uses local SQLite fixtures; do not use it with real employee records or as a shared multi-organization service until the company connector and PostgreSQL case repository are connected. Times are naive site-local values. It does not model WFH, leave, half/full-day statuses, employee availability, staffing coverage targets, or individual absence forecasts. Payroll calculation, daylight-saving transitions, multiple shifts per day, mobile layouts, and internationalization are out of scope.
 
 Future work could add real timekeeping integrations, additional jurisdictions and policy handbooks, stronger identity and access controls, time-zone-aware shifts, multiple shifts per day, explicit WFH/leave records, staffing targets and employee availability for whole-team schedule optimization, and carefully governed learning from manager edits. Individual absence forecasts would require reliable labeled data and fairness evaluation before use.
 
@@ -234,8 +238,9 @@ Future work could add real timekeeping integrations, additional jurisdictions an
 ```text
 backend/        FastAPI API, policy data, rules, proposal pipeline, decisions, assistant, and tests
 frontend/       React + TypeScript manager workflow, read-only assistant, and frontend tests
-docs/           OpenAPI contract, architecture, decisions, license note, demo, and slides
+docs/           OpenAPI contract, integration/Auth setup, architecture, decisions, and demo
 eval/           Labelled cases, independent oracle, evaluation runner, and results
+supabase/       Versioned workflow and user-profile migrations
 ```
 
 ## Team and roles

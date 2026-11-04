@@ -4,6 +4,7 @@ import {
   auditEventSchema,
   auditVerifySchema,
   assistantAnswerSchema,
+  currentUserSchema,
   decisionOutSchema,
   exceptionDetailSchema,
   exceptionOutSchema,
@@ -132,10 +133,21 @@ export function useHealth() {
   });
 }
 
-export function useLlmMode() {
+export function useCurrentUser(enabled = true) {
+  return useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => apiFetch(`${API}/me`, {}, currentUserSchema),
+    enabled,
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
+export function useLlmMode(enabled = true) {
   return useQuery({
     queryKey: ["llm-mode"],
     queryFn: () => apiFetch(`${API}/admin/llm-mode`, {}, llmModeSchema),
+    enabled,
     retry: false,
     staleTime: 5_000,
   });

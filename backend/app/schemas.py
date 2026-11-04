@@ -388,6 +388,16 @@ class HealthOut(BaseModel):
     now: LocalTs
 
 
+class CurrentUserOut(BaseModel):
+    """Authenticated principal resolved from Supabase Auth and user_profiles."""
+
+    user_id: str
+    organization_id: str | None
+    role: Literal["HR", "manager", "integration_service"]
+    manager_ref: str | None = None
+    email: str | None = None
+
+
 class ErrorOut(BaseModel):
     detail: str
     code: str

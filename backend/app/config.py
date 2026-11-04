@@ -4,6 +4,7 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,7 +20,12 @@ class Settings(BaseSettings):
     )
 
     db_path: Path = Path("./shiftguard.db")
+    auth_mode: Literal["demo", "supabase"] = "demo"
     supabase_database_url: SecretStr | None = None
+    supabase_url: str | None = None
+    supabase_jwt_secret: SecretStr | None = None
+    auth_organization_id: UUID | None = None
+    cors_origins: str = "http://localhost:5173"
     demo_now: datetime | None = datetime(2025, 3, 13, 20, 0)
     llm_provider: Literal["mock", "ollama"] = "mock"
     ollama_url: str = "http://localhost:11434"

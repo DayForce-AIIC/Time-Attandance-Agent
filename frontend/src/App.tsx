@@ -1,12 +1,53 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useAuth, AuthProvider } from "./auth/AuthContext";
 import { AppHeader } from "./components/AppHeader";
 import { ManagerProvider } from "./context/ManagerContext";
+import { LoginPage } from "./pages/LoginPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { CasePage } from "./pages/CasePage";
 import { MetricsPage } from "./pages/MetricsPage";
 import { QueuePage } from "./pages/QueuePage";
+import { useCurrentUser } from "./api/hooks";
 
 export function App() {
+  return (
+    <AuthProvider>
+      <AppGate />
+    </AuthProvider>
+  );
+}
+
+function AppGate() {
+  const auth = useAuth();
+  if (!auth.enabled) return <Workspace />;
+  if (!auth.configured) return <LoginPage />;
+  if (auth.loading) return <main className="auth-shell"><p role="status">Checking sign-in…</p></main>;
+  if (!auth.session) return <LoginPage />;
+  return <ProfileGate />;
+}
+
+function ProfileGate() {
+  const auth = useAuth();
+  const currentUser = useCurrentUser(true);
+  if (currentUser.isLoading) return <main className="auth-shell"><p role="status">Loading your access profile…</p></main>;
+  if (currentUser.isError || !currentUser.data) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card" role="alert">
+          <p className="eyebrow">Access profile</p>
+          <h1>We couldn’t load your ShiftGuard access</h1>
+          <p className="auth-description">Ask an administrator to assign your organization and role, then sign in again.</p>
+          <button className="button button-outline" type="button" onClick={() => void auth.signOut()}>
+            Sign out
+          </button>
+        </section>
+      </main>
+    );
+  }
+  return <Workspace />;
+}
+
+function Workspace() {
   return (
     <ManagerProvider>
       <BrowserRouter>

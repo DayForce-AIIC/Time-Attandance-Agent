@@ -12,18 +12,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app import repo
 from app.assistant import answer_attendance_question
 from app.audit import verify_chain
+from app.auth import Principal
 from app.clock import Clock
 from app.config import Settings
 from app.db import init_db
 from app.decisions import decide
 from app.deps import (
     current_manager,
+    current_principal,
     demo_manager,
     get_book,
     get_clock,
     get_conn,
     get_llm,
     get_settings,
+    require_hr,
 )
 from app.detection import run_detection
 from app.engine.shifts import build_shifts
@@ -38,6 +41,7 @@ from app.schemas import (
     AssistantQuestion,
     AuditEventOut,
     AuditVerifyOut,
+    CurrentUserOut,
     DecisionIn,
     DecisionOut,
     DetectIn,
@@ -62,6 +66,23 @@ from app.schemas import (
 from app.seed import seed
 
 router = APIRouter(prefix="/api/v1")
+
+
+@router.get(
+    "/me",
+    response_model=CurrentUserOut,
+    summary="Get the authenticated ShiftGuard user and role",
+    tags=["auth"],
+)
+def current_user(principal: Principal = Depends(current_principal)) -> CurrentUserOut:
+    """Return the backend-verified user profile used to authorize API requests."""
+    return CurrentUserOut(
+        user_id=principal.user_id,
+        organization_id=(str(principal.organization_id) if principal.organization_id else None),
+        role=principal.role,
+        manager_ref=principal.manager_ref,
+        email=principal.email,
+    )
 
 
 @router.post(
@@ -131,11 +152,24 @@ def detect(
     conn: sqlite3.Connection = Depends(get_conn),
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
-    _manager: str = Depends(current_manager),
+    principal: Principal = Depends(current_principal),
 ) -> DetectOut:
-    """Run deterministic timecard checks and persist current findings."""
+    """Run deterministic checks only for the authenticated user's permitted team."""
     as_of = datetime.strptime(body.as_of, "%Y-%m-%dT%H:%M") if body.as_of else clock.now()
-    return run_detection(conn, as_of, book, body.employee_ids)
+    employees = repo.list_employees(conn)
+    if principal.role != "HR" and principal.manager_ref is not None:
+        employees = [
+            employee
+            for employee in employees
+            if str(employee["manager_id"]) == principal.manager_ref
+        ]
+    allowed_ids = {str(employee["id"]) for employee in employees}
+    selected_ids = (
+        sorted(allowed_ids)
+        if body.employee_ids is None
+        else sorted(allowed_ids.intersection(body.employee_ids))
+    )
+    return run_detection(conn, as_of, book, selected_ids)
 
 
 @router.get(
@@ -249,12 +283,23 @@ def create_decision(
     exception_id: int,
     body: DecisionIn,
     conn: sqlite3.Connection = Depends(get_conn),
-    manager_id: str = Depends(current_manager),
+    principal: Principal = Depends(current_principal),
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
 ) -> DecisionOut:
     """Record a manager decision and apply an approved correction."""
-    return decide(conn, exception_id, manager_id, body, clock, book)
+    manager_scope = principal.manager_ref or "*"
+    actor_id = principal.manager_ref if principal.is_demo else principal.user_id
+    return decide(
+        conn,
+        exception_id,
+        manager_scope,
+        body,
+        clock,
+        book,
+        actor_id=actor_id,
+        hr_scope=principal.role == "HR",
+    )
 
 
 @router.get(
@@ -330,7 +375,10 @@ def policy_detail(policy_id: str) -> PolicyPassage:
     summary="Verify the audit hash chain",
     tags=["audit"],
 )
-def audit_verify(conn: sqlite3.Connection = Depends(get_conn)) -> AuditVerifyOut:
+def audit_verify(
+    conn: sqlite3.Connection = Depends(get_conn),
+    _principal: Principal = Depends(require_hr),
+) -> AuditVerifyOut:
     """Recompute and report the integrity of the complete audit chain."""
     return verify_chain(conn)
 
@@ -346,6 +394,7 @@ def metrics(
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
     settings: Settings = Depends(get_settings),
+    _principal: Principal = Depends(require_hr),
 ) -> MetricsOut:
     """Report proposal throughput, review outcomes, savings, and current risk."""
     return calculate_metrics(conn, clock, book, settings)
@@ -441,7 +490,7 @@ def _authorized_employee(
     employee = repo.get_employee(conn, employee_id)
     if employee is None:
         raise NotFound(f"employee {employee_id} was not found")
-    if str(employee["manager_id"]) != manager_id:
+    if manager_id != "*" and str(employee["manager_id"]) != manager_id:
         raise Forbidden("employee is not managed by this manager")
     return employee
 

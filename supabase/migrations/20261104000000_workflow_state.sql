@@ -13,9 +13,11 @@ create table public.user_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   organization_id uuid not null references public.organizations(id) on delete restrict,
   role text not null check (role in ('HR', 'manager', 'integration_service')),
+  manager_ref text,
   external_user_ref text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint user_profiles_manager_ref_required check (role <> 'manager' or manager_ref is not null)
 );
 create index user_profiles_organization_idx on public.user_profiles(organization_id);
 
