@@ -40,11 +40,17 @@ def apply_in_memory(
         if correction.punch_id is None:
             raise ValueError("MODIFY_PUNCH requires a punch id")
         target_index = next(
-            (index for index, punch in enumerate(updated_punches) if punch.id == correction.punch_id),
+            (
+                index
+                for index, punch in enumerate(updated_punches)
+                if punch.id == correction.punch_id
+            ),
             None,
         )
         if target_index is None:
-            raise ValueError(f"punch {correction.punch_id} does not belong to the correction context")
+            raise ValueError(
+                f"punch {correction.punch_id} does not belong to the correction context"
+            )
         updated_punches[target_index] = replace(
             updated_punches[target_index], ts=_parse_ts(correction.ts)
         )
@@ -52,17 +58,27 @@ def apply_in_memory(
         if correction.punch_id is None:
             raise ValueError("REMOVE_PUNCH requires a punch id")
         target_index = next(
-            (index for index, punch in enumerate(updated_punches) if punch.id == correction.punch_id),
+            (
+                index
+                for index, punch in enumerate(updated_punches)
+                if punch.id == correction.punch_id
+            ),
             None,
         )
         if target_index is None:
-            raise ValueError(f"punch {correction.punch_id} does not belong to the correction context")
+            raise ValueError(
+                f"punch {correction.punch_id} does not belong to the correction context"
+            )
         updated_punches[target_index] = replace(updated_punches[target_index], voided=True)
     elif correction.action is Action.ADJUST_SCHEDULE:
         if correction.schedule_id is None:
             raise ValueError("ADJUST_SCHEDULE requires a schedule id")
         target_index = next(
-            (index for index, schedule in enumerate(updated_schedules) if schedule.id == correction.schedule_id),
+            (
+                index
+                for index, schedule in enumerate(updated_schedules)
+                if schedule.id == correction.schedule_id
+            ),
             None,
         )
         if target_index is None:

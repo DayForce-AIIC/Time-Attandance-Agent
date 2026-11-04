@@ -4,12 +4,11 @@ from datetime import date, datetime
 
 from app import repo
 from app.detection import run_detection
-from app.engine.rules import detect_employee
-from app.engine.shifts import Punch, Sched, build_shifts
+from app.engine.rules import DetectedException
+from app.engine.shifts import Punch, build_shifts
 from app.engine.simulate import apply_in_memory
 from app.policies import load_policies, retrieve_policies
-from app.schemas import Action, Constraints, PunchKind, ProposedCorrection, Severity
-from app.engine.rules import DetectedException
+from app.schemas import Action, Constraints, ProposedCorrection, PunchKind, Severity
 
 
 def test_build_shifts_marks_open_break_and_duplicate():
@@ -59,9 +58,7 @@ def test_simulation_add_modify_remove_and_adjust_schedule_are_copy_only(seeded_c
     ).fetchone()
     employee = repo.get_employee(seeded_conn, "e-006")
     work_date = date.fromisoformat(exception["work_date"])
-    punches, schedules = repo.get_timekeeping_records(
-        seeded_conn, "e-006", work_date, work_date
-    )
+    punches, schedules = repo.get_timekeeping_records(seeded_conn, "e-006", work_date, work_date)
     detected = DetectedException(
         rule_id="PUNCH-03",
         employee_id="e-006",

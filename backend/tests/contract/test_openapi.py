@@ -3,15 +3,12 @@
 import json
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
-from pydantic import TypeAdapter
-
 from app.main import app
+from app.policies import FROZEN_RULE_IDS as POLICY_RULE_IDS
 from app.schemas import (
     Action,
     AuditEventOut,
     AuditVerifyOut,
-    DetectOut,
     ExceptionDetail,
     ExceptionOut,
     ExceptionStatus,
@@ -22,8 +19,8 @@ from app.schemas import (
     PolicyPassage,
     TimecardOut,
 )
-from app.policies import FROZEN_RULE_IDS as POLICY_RULE_IDS
-
+from jsonschema import Draft202012Validator
+from pydantic import TypeAdapter
 
 ROOT = Path(__file__).resolve().parents[3]
 OPENAPI_PATH = ROOT / "docs" / "openapi.json"
@@ -73,7 +70,9 @@ def test_every_phase_11_route_has_the_expected_response_model():
     }
     for (path, method), expected_name in expected.items():
         assert method in schema["paths"][path]
-        response_schema = schema["paths"][path][method]["responses"]["200"]["content"]["application/json"]["schema"]
+        response_schema = schema["paths"][path][method]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]
         if response_schema.get("type") == "array":
             response_schema = response_schema["items"]
         assert response_schema["$ref"].endswith(f"/{expected_name}")
@@ -115,7 +114,9 @@ def test_live_get_responses_match_pydantic_and_openapi_json_schema(client):
             route_path = "/api/v1/employees/{employee_id}/timecard"
         elif path.startswith("/api/v1/policies/"):
             route_path = "/api/v1/policies/{policy_id}"
-        response_schema = openapi["paths"][route_path]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+        response_schema = openapi["paths"][route_path]["get"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]
         resolved_schema = _resolve_component_refs(response_schema, openapi["components"]["schemas"])
         Draft202012Validator(resolved_schema).validate(payload)
 
@@ -138,10 +139,7 @@ def _resolve_component_refs(schema, components):
             if key != "$ref"
         }
         return {**resolved, **siblings}
-    return {
-        key: _resolve_component_refs(value, components)
-        for key, value in schema.items()
-    }
+    return {key: _resolve_component_refs(value, components) for key, value in schema.items()}
 
 
 def test_frozen_public_enums_and_rule_ids():

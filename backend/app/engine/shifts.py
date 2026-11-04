@@ -80,8 +80,7 @@ class Shift:
             return 0
         return max(
             0,
-            _whole_minutes(self.sched.end - self.sched.start)
-            - self.sched.planned_break_minutes,
+            _whole_minutes(self.sched.end - self.sched.start) - self.sched.planned_break_minutes,
         )
 
 
@@ -216,18 +215,16 @@ def build_shifts(
 
     shifts: dict[date, Shift] = {}
     for work_date in sorted(punch_groups.keys() | schedule_by_date.keys()):
-        raw_punches = sorted(
-            punch_groups.get(work_date, []), key=lambda item: (item.ts, item.id)
-        )
+        raw_punches = sorted(punch_groups.get(work_date, []), key=lambda item: (item.ts, item.id))
         deduped, duplicates = _deduplicate(raw_punches, dup_window_minutes)
         in_ts, out_ts, breaks, anomalies = _parse_sequence(deduped)
-        sched = schedule_by_date.get(work_date)
+        scheduled_shift = schedule_by_date.get(work_date)
         expected_start, expected_end = _expected_times(
-            work_date, sched, deduped, in_ts, out_ts
+            work_date, scheduled_shift, deduped, in_ts, out_ts
         )
         employee_id = (
-            sched.employee_id
-            if sched is not None
+            scheduled_shift.employee_id
+            if scheduled_shift is not None
             else deduped[0].employee_id
             if deduped
             else ""
@@ -235,7 +232,7 @@ def build_shifts(
         shifts[work_date] = Shift(
             employee_id=employee_id,
             work_date=work_date,
-            sched=sched,
+            sched=scheduled_shift,
             punches=deduped,
             duplicates=duplicates,
             in_ts=in_ts,

@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from app import repo
 from app.audit import verify_chain
 from app.clock import Clock
@@ -48,7 +47,11 @@ def test_pipeline_fault_modes_are_audited_and_timecard_is_immutable(
         assert "FALLBACK" in event_types
         assert result.proposal.proposed_correction.action.value == "ESCALATE"
     if mode == FaultMode.NAIVE_LATEST:
-        validations = [json.loads(row["payload_json"]) for row in event_rows if row["event_type"] == "VALIDATION_RESULT" and row["trace_id"] == result.trace_id]
+        validations = [
+            json.loads(row["payload_json"])
+            for row in event_rows
+            if row["event_type"] == "VALIDATION_RESULT" and row["trace_id"] == result.trace_id
+        ]
         assert any("OT-01" in json.dumps(payload) for payload in validations)
     after = [tuple(punch) for punch in seeded_conn.execute("SELECT * FROM punches ORDER BY id")]
     assert before == after

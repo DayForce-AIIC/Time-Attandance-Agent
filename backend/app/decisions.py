@@ -24,7 +24,6 @@ from app.schemas import (
 )
 from app.validator import ValidationContext, validate_correction
 
-
 _DECIDABLE_STATUSES = {ExceptionStatus.PENDING_REVIEW.value, ExceptionStatus.ESCALATED.value}
 
 

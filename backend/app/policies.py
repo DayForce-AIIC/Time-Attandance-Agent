@@ -9,7 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas import Action, FlagType, PolicyPassage, Severity
 
-
 FROZEN_RULE_IDS = (
     "PUNCH-01",
     "PUNCH-02",

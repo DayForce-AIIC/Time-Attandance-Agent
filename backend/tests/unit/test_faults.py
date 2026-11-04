@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from app.llm.base import LLMResult, LLMTimeout
 from app.llm.faults import FaultInjector
 from app.schemas import FaultMode
@@ -42,13 +41,28 @@ def bundle():
     return PromptBundle(
         "system",
         "user",
-        {"constraints": {"ts_window": {"earliest": "2025-03-13T09:00", "latest": "2025-03-13T18:00"}}},
+        {
+            "constraints": {
+                "ts_window": {"earliest": "2025-03-13T09:00", "latest": "2025-03-13T18:00"}
+            }
+        },
         {},
         1,
     )
 
 
-@pytest.mark.parametrize("mode", [FaultMode.NONE, FaultMode.BAD_THEN_GOOD, FaultMode.ALWAYS_BAD, FaultMode.GARBAGE, FaultMode.TIMEOUT, FaultMode.BAD_CITATION, FaultMode.NAIVE_LATEST])
+@pytest.mark.parametrize(
+    "mode",
+    [
+        FaultMode.NONE,
+        FaultMode.BAD_THEN_GOOD,
+        FaultMode.ALWAYS_BAD,
+        FaultMode.GARBAGE,
+        FaultMode.TIMEOUT,
+        FaultMode.BAD_CITATION,
+        FaultMode.NAIVE_LATEST,
+    ],
+)
 def test_each_fault_mode_behaves_as_specified(mode, bundle):
     client = FaultInjector(FixedClient(), lambda: mode)
     if mode == FaultMode.TIMEOUT:
@@ -72,4 +86,7 @@ def test_each_fault_mode_behaves_as_specified(mode, bundle):
 
 def test_bad_then_good_only_mutates_first_attempt(bundle):
     client = FaultInjector(FixedClient(), lambda: FaultMode.BAD_THEN_GOOD)
-    assert json.loads(client.generate(bundle, 2).raw_text)["proposed_correction"]["ts"] == "2025-03-13T18:00"
+    assert (
+        json.loads(client.generate(bundle, 2).raw_text)["proposed_correction"]["ts"]
+        == "2025-03-13T18:00"
+    )

@@ -14,8 +14,8 @@ from app.audit import (
     FALLBACK,
     LLM_CALL,
     LLM_ERROR,
-    PROPOSAL_CREATED,
     PROMPT_BUILT,
+    PROPOSAL_CREATED,
     RETRY,
     SCHEMA_VALIDATION,
     VALIDATION_RESULT,
@@ -27,22 +27,21 @@ from app.engine.shifts import build_shifts
 from app.errors import NotFound, StateConflict
 from app.llm.base import LLMClient, LLMTimeout, LLMUnavailable, PromptBundle
 from app.llm.prompt import build_prompt
+from app.logging_setup import trace_id_var
 from app.policies import PolicyBook, retrieve_policies
 from app.schemas import (
     Action,
     CheckResult,
+    Constraints,
     ExceptionStatus,
     LLMProposal,
     ProposalOut,
     ProposalSource,
     ProposedCorrection,
-    Constraints,
     Severity,
     ValidationResult,
 )
 from app.validator import ExceptionRecord, ValidationContext, validate_proposal
-from app.logging_setup import trace_id_var
-
 
 _NON_PROPOSABLE_STATUSES = {
     ExceptionStatus.RESOLVED.value,
@@ -86,7 +85,11 @@ def propose(
     policies = retrieve_policies(str(exc["rule_id"]), str(employee["jurisdiction"]))
     policy_ids = [passage.policy_id for passage in policies]
     week_shifts = build_shifts(
-        [punch for punch in punches if week_start <= punch.work_date <= min(week_end, as_of.date())],
+        [
+            punch
+            for punch in punches
+            if week_start <= punch.work_date <= min(week_end, as_of.date())
+        ],
         [schedule for schedule in schedules if week_start <= schedule.work_date <= week_end],
         dup_window_minutes=book.global_params.dup_window_minutes,
     )
@@ -154,9 +157,7 @@ def propose(
                         {"attempt": attempt, "error": str(error)},
                         exception_id=exc_id,
                     )
-                    proposal, validation = validate_proposal(
-                        "LLM unavailable", record, ctx
-                    )
+                    proposal, validation = validate_proposal("LLM unavailable", record, ctx)
                     last_feedback = "LLM unavailable"
                 else:
                     append_event(
@@ -173,9 +174,7 @@ def propose(
                         },
                         exception_id=exc_id,
                     )
-                    proposal, validation = validate_proposal(
-                        llm_result.raw_text, record, ctx
-                    )
+                    proposal, validation = validate_proposal(llm_result.raw_text, record, ctx)
                     last_feedback = validation.checks
 
                 results.append((proposal, validation))
@@ -286,9 +285,7 @@ def _audit_prompt(
     bundle: PromptBundle,
     attempt: int,
 ) -> None:
-    prompt_hash = hashlib.sha256(
-        f"{bundle.system}\n{bundle.user}".encode("utf-8")
-    ).hexdigest()
+    prompt_hash = hashlib.sha256(f"{bundle.system}\n{bundle.user}".encode("utf-8")).hexdigest()
     append_event(
         conn,
         trace_id,

@@ -5,11 +5,9 @@ import re
 import unicodedata
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime
-from typing import Any
 
 from app.llm.base import PromptBundle
 from app.schemas import CheckResult, LLMProposal
-
 
 SYSTEM_PROMPT = """You are a timecard-exception assistant inside a payroll product. You do NOT make decisions; a manager reviews everything you produce.
 Rules:
@@ -79,9 +77,7 @@ def sanitize_note(note: str | None) -> str:
     if not note:
         return ""
     cleaned = "".join(
-        character
-        for character in note
-        if unicodedata.category(character) not in {"Cc", "Cf"}
+        character for character in note if unicodedata.category(character) not in {"Cc", "Cf"}
     )
     cleaned = cleaned.replace("<untrusted_employee_note>", "")
     cleaned = cleaned.replace("</untrusted_employee_note>", "")
@@ -120,7 +116,9 @@ def _json_value(value: object) -> object:
 
 def _scalar(value: object) -> object:
     if isinstance(value, (datetime, date)):
-        return value.strftime("%Y-%m-%dT%H:%M") if isinstance(value, datetime) else value.isoformat()
+        return (
+            value.strftime("%Y-%m-%dT%H:%M") if isinstance(value, datetime) else value.isoformat()
+        )
     enum_value = getattr(value, "value", None)
     return enum_value if enum_value is not None else value
 
@@ -222,7 +220,7 @@ def build_prompt(
     feedback: str | Sequence[CheckResult] | None = None,
 ) -> PromptBundle:
     """Build a stable prompt containing only approved case and policy context."""
-    exception_id = int(_get(exception_row, "id"))
+    exception_id = int(str(_get(exception_row, "id")))
     evidence = _json_value(_first(exception_row, "evidence", "evidence_json", default={}))
     if not isinstance(evidence, Mapping):
         raise ValueError("exception evidence must be a mapping or JSON object")

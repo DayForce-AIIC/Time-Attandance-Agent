@@ -3,7 +3,6 @@
 import importlib.util
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 GENERATOR_PATH = ROOT / "eval" / "generate_cases.py"
 SPEC = importlib.util.spec_from_file_location("shiftguard_eval_generator", GENERATOR_PATH)

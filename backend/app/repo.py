@@ -9,6 +9,13 @@ from app.engine.shifts import Punch, Sched
 from app.schemas import ExceptionStatus, PunchKind, Severity
 
 
+def _insert_id(cursor: sqlite3.Cursor) -> int:
+    """Return an inserted row ID or fail clearly if SQLite did not provide one."""
+    if cursor.lastrowid is None:
+        raise RuntimeError("insert did not return a row ID")
+    return cursor.lastrowid
+
+
 def count_managers(conn: sqlite3.Connection) -> int:
     """Count seeded managers."""
     row = conn.execute("SELECT COUNT(*) AS total FROM managers").fetchone()
@@ -66,7 +73,7 @@ def insert_schedule(
             planned_break_minutes,
         ),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
 def insert_punch(
@@ -83,7 +90,7 @@ def insert_punch(
            VALUES (?, ?, ?, ?, ?)""",
         (employee_id, work_date.isoformat(), ts.strftime("%Y-%m-%dT%H:%M"), kind.value, source),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
 def insert_employee_note(
@@ -94,7 +101,7 @@ def insert_employee_note(
         "INSERT INTO employee_notes (employee_id, work_date, text) VALUES (?, ?, ?)",
         (employee_id, work_date.isoformat(), text),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
 def list_employees(
@@ -158,13 +165,9 @@ def get_timekeeping_records(
     return punches, schedules
 
 
-def get_exception_by_fingerprint(
-    conn: sqlite3.Connection, fingerprint: str
-) -> sqlite3.Row | None:
+def get_exception_by_fingerprint(conn: sqlite3.Connection, fingerprint: str) -> sqlite3.Row | None:
     """Find a previously detected exception by its stable fingerprint."""
-    return conn.execute(
-        "SELECT * FROM exceptions WHERE fingerprint = ?", (fingerprint,)
-    ).fetchone()
+    return conn.execute("SELECT * FROM exceptions WHERE fingerprint = ?", (fingerprint,)).fetchone()
 
 
 def get_exception(conn: sqlite3.Connection, exception_id: int) -> sqlite3.Row | None:
@@ -209,7 +212,7 @@ def list_exceptions_for_manager(
     return conn.execute(
         f"""SELECT x.*, e.name AS employee_name
             FROM exceptions AS x JOIN employees AS e ON e.id = x.employee_id
-            WHERE {' AND '.join(clauses)}
+            WHERE {" AND ".join(clauses)}
             ORDER BY CASE x.severity WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END DESC,
                      x.work_date ASC, x.id ASC
             LIMIT ? OFFSET ?""",
@@ -217,9 +220,7 @@ def list_exceptions_for_manager(
     ).fetchall()
 
 
-def list_audit_events(
-    conn: sqlite3.Connection, exception_id: int
-) -> list[sqlite3.Row]:
+def list_audit_events(conn: sqlite3.Connection, exception_id: int) -> list[sqlite3.Row]:
     """List audit events for one exception in insertion order."""
     return conn.execute(
         "SELECT * FROM audit_log WHERE exception_id = ? ORDER BY id", (exception_id,)
@@ -265,9 +266,7 @@ def list_pending_llm_proposals(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     ).fetchall()
 
 
-def get_employee_note(
-    conn: sqlite3.Connection, employee_id: str, work_date: date
-) -> str | None:
+def get_employee_note(conn: sqlite3.Connection, employee_id: str, work_date: date) -> str | None:
     """Return the most recently recorded note for one employee and work date."""
     row = conn.execute(
         """SELECT text FROM employee_notes
@@ -307,7 +306,7 @@ def create_proposal(
             created_at,
         ),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
 def get_latest_proposal(conn: sqlite3.Connection, exception_id: int) -> sqlite3.Row | None:
@@ -354,7 +353,7 @@ def create_decision(
             decided_at,
         ),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
 def update_punch_ts(conn: sqlite3.Connection, punch_id: int, ts: str) -> None:
@@ -400,7 +399,7 @@ def create_adjustment(
             created_at,
         ),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
 def create_exception(
@@ -432,12 +431,10 @@ def create_exception(
             detected_at,
         ),
     )
-    return int(cursor.lastrowid)
+    return _insert_id(cursor)
 
 
-def list_exceptions_for_employee(
-    conn: sqlite3.Connection, employee_id: str
-) -> list[sqlite3.Row]:
+def list_exceptions_for_employee(conn: sqlite3.Connection, employee_id: str) -> list[sqlite3.Row]:
     """List persisted exceptions for one employee in primary-key order."""
     return conn.execute(
         "SELECT * FROM exceptions WHERE employee_id = ? ORDER BY id", (employee_id,)
@@ -448,6 +445,4 @@ def set_exception_status(
     conn: sqlite3.Connection, exception_id: int, status: ExceptionStatus
 ) -> None:
     """Update an exception status by primary key."""
-    conn.execute(
-        "UPDATE exceptions SET status = ? WHERE id = ?", (status.value, exception_id)
-    )
+    conn.execute("UPDATE exceptions SET status = ? WHERE id = ?", (status.value, exception_id))
