@@ -222,6 +222,99 @@ def create_proposal(
     return int(cursor.lastrowid)
 
 
+def get_latest_proposal(conn: sqlite3.Connection, exception_id: int) -> sqlite3.Row | None:
+    """Return the most recently stored proposal for an exception."""
+    return conn.execute(
+        "SELECT * FROM proposals WHERE exception_id = ? ORDER BY id DESC LIMIT 1",
+        (exception_id,),
+    ).fetchone()
+
+
+def get_punch(conn: sqlite3.Connection, punch_id: int) -> sqlite3.Row | None:
+    """Load a punch row by ID."""
+    return conn.execute("SELECT * FROM punches WHERE id = ?", (punch_id,)).fetchone()
+
+
+def get_schedule(conn: sqlite3.Connection, schedule_id: int) -> sqlite3.Row | None:
+    """Load a schedule row by ID."""
+    return conn.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
+
+
+def create_decision(
+    conn: sqlite3.Connection,
+    exception_id: int,
+    proposal_id: int,
+    action: str,
+    manager_id: str,
+    note: str | None,
+    final_correction_json: str | None,
+    decided_at: str,
+) -> int:
+    """Persist a manager decision and return its primary key."""
+    cursor = conn.execute(
+        """INSERT INTO decisions
+           (exception_id, proposal_id, action, manager_id, note,
+            final_correction_json, decided_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (
+            exception_id,
+            proposal_id,
+            action,
+            manager_id,
+            note,
+            final_correction_json,
+            decided_at,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
+def update_punch_ts(conn: sqlite3.Connection, punch_id: int, ts: str) -> None:
+    """Update one punch timestamp."""
+    conn.execute("UPDATE punches SET ts = ? WHERE id = ?", (ts, punch_id))
+
+
+def void_punch(conn: sqlite3.Connection, punch_id: int) -> None:
+    """Mark one punch voided without deleting its audit history."""
+    conn.execute("UPDATE punches SET voided = 1 WHERE id = ?", (punch_id,))
+
+
+def update_schedule_end(conn: sqlite3.Connection, schedule_id: int, ts: str) -> None:
+    """Update a schedule's planned end timestamp."""
+    conn.execute("UPDATE schedules SET end_ts = ? WHERE id = ?", (ts, schedule_id))
+
+
+def create_adjustment(
+    conn: sqlite3.Connection,
+    decision_id: int,
+    exception_id: int,
+    employee_id: str,
+    adjustment_type: str,
+    target_id: int | None,
+    old_value: str | None,
+    new_value: str | None,
+    created_at: str,
+) -> int:
+    """Record one applied correction or approval annotation."""
+    cursor = conn.execute(
+        """INSERT INTO adjustments
+           (decision_id, exception_id, employee_id, type, target_id,
+            old_value, new_value, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            decision_id,
+            exception_id,
+            employee_id,
+            adjustment_type,
+            target_id,
+            old_value,
+            new_value,
+            created_at,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
 def create_exception(
     conn: sqlite3.Connection,
     fingerprint: str,
