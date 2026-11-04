@@ -1,0 +1,5446 @@
+{
+  "cases": [
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1799 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1805 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 2400 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T18:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1530 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T12:31"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1859 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T18:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1829 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 2370 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T18:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1805 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 480 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T04:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1810 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-011",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1832 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-02",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "IN",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T09:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-02",
+        "missing-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-012",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1832 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-02",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "IN",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T09:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-02",
+        "missing-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-013",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1832 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-02",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "IN",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T09:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-02",
+        "missing-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-014",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1832 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-02",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "IN",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T09:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-02",
+        "missing-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-015",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1832 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-02",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "IN",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T09:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-02",
+        "missing-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-016",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "corrected weekly work 1791 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-03"
+        ],
+        "proposed_correction": {
+          "action": "REMOVE_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 76,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-03",
+        "duplicate-punch"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-017",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "corrected weekly work 1791 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-03"
+        ],
+        "proposed_correction": {
+          "action": "REMOVE_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 76,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-03",
+        "duplicate-punch"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-018",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "corrected weekly work 1791 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-03"
+        ],
+        "proposed_correction": {
+          "action": "REMOVE_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 76,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-03",
+        "duplicate-punch"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-019",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "corrected weekly work 1791 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-03"
+        ],
+        "proposed_correction": {
+          "action": "REMOVE_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 76,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-03",
+        "duplicate-punch"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-020",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-04"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-04",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1795 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-04 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-04",
+          "BRK-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "BREAK_END",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T12:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-04",
+        "open-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-021",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-04"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-04",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1795 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-04 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-04",
+          "BRK-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "BREAK_END",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T12:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-04",
+        "open-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-022",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-04"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-04",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1795 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-04 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-04",
+          "BRK-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "BREAK_END",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T12:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-04",
+        "open-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-023",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-04"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-04",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1795 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-04 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-04",
+          "BRK-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "BREAK_END",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-11T12:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-04",
+        "open-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-024",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "MAX-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "MAX-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1435 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule MAX-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "MAX-01",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "MODIFY_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 110,
+          "schedule_id": null,
+          "ts": "2025-03-10T16:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "MAX-01",
+        "long-shift"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-025",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "MAX-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "MAX-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1435 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule MAX-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "MAX-01",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "MODIFY_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 110,
+          "schedule_id": null,
+          "ts": "2025-03-10T16:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "MAX-01",
+        "long-shift"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-026",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "MAX-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "MAX-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1435 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule MAX-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "MAX-01",
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "MODIFY_PUNCH",
+          "kind": null,
+          "note": null,
+          "punch_id": 110,
+          "schedule_id": null,
+          "ts": "2025-03-10T16:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "MAX-01",
+        "long-shift"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-027",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "BRK-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "BRK-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule BRK-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "BRK-01",
+          "BRK-02"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "BRK-01",
+        "missing-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-028",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "BRK-02",
+        "OT-02",
+        "SCHED-01"
+      ],
+      "detection_created": 3,
+      "expected_rule": "BRK-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule BRK-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "BRK-02",
+          "BRK-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "BRK-02",
+        "short-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-029",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "BRK-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "BRK-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule BRK-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "BRK-01",
+          "BRK-02"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "BRK-01",
+        "missing-break",
+        "variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-030",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "BRK-02",
+        "OT-02",
+        "SCHED-01"
+      ],
+      "detection_created": 3,
+      "expected_rule": "BRK-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule BRK-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "BRK-02",
+          "BRK-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "BRK-02",
+        "short-break",
+        "variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-031",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-01",
+          "OT-02"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-01",
+        "weekly-overtime"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-032",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-02",
+          "OT-01"
+        ],
+        "proposed_correction": {
+          "action": "ADJUST_SCHEDULE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": 10,
+          "ts": "2025-03-14T12:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-02",
+        "projected-overtime"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-033",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-01",
+          "OT-02"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-01",
+        "weekly-overtime",
+        "variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-034",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-02",
+          "OT-01"
+        ],
+        "proposed_correction": {
+          "action": "ADJUST_SCHEDULE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": 10,
+          "ts": "2025-03-14T12:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-02",
+        "projected-overtime",
+        "exact-threshold"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-035",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-03",
+          "OT-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-03",
+        "california-daily-overtime"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-036",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-03",
+          "OT-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-03",
+        "california-daily-overtime"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-037",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "OT-03"
+      ],
+      "detection_created": 1,
+      "expected_rule": "OT-03",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule OT-03 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "OT-03",
+          "OT-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "OT-03",
+        "california-daily-overtime"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-038",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "SCHED-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "SCHED-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule SCHED-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "SCHED-01",
+          "SCHED-02"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "SCHED-01",
+        "schedule-deviation"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-039",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "SCHED-02"
+      ],
+      "detection_created": 1,
+      "expected_rule": "SCHED-02",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule SCHED-02 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "SCHED-02",
+          "SCHED-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "SCHED-02",
+        "unscheduled-work"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-040",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "SCHED-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "SCHED-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule SCHED-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "SCHED-01",
+          "SCHED-02"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "SCHED-01",
+        "schedule-deviation",
+        "variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-041",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "REST-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "REST-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule REST-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "REST-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "REST-01",
+        "short-rest"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-042",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "REST-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "REST-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule REST-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "REST-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "REST-01",
+        "short-rest"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-043",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "DAY-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "DAY-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule DAY-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "DAY-01",
+          "OT-01"
+        ],
+        "proposed_correction": {
+          "action": "FLAG_FOR_APPROVAL",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "DAY-01",
+        "consecutive-days"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": true,
+      "attempts": 1,
+      "case_id": "case-044",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1799 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "adversarial",
+        "injection-1"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": true,
+      "attempts": 1,
+      "case_id": "case-045",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1799 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "adversarial",
+        "injection-2"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": true,
+      "attempts": 1,
+      "case_id": "case-046",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1799 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "adversarial",
+        "injection-3"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 0,
+      "case_id": "case-047",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [],
+      "detection_created": 0,
+      "expected_rule": null,
+      "first_pass_validation": false,
+      "latency_ms": null,
+      "model": null,
+      "oracle": {
+        "checks": [
+          "clean case produced no proposal"
+        ],
+        "passed": true
+      },
+      "proposal": null,
+      "source": null,
+      "tags": [
+        "clean"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": null
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 0,
+      "case_id": "case-048",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [],
+      "detection_created": 0,
+      "expected_rule": null,
+      "first_pass_validation": false,
+      "latency_ms": null,
+      "model": null,
+      "oracle": {
+        "checks": [
+          "clean case produced no proposal"
+        ],
+        "passed": true
+      },
+      "proposal": null,
+      "source": null,
+      "tags": [
+        "clean"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": null
+    }
+  ],
+  "fault_cases": [
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "garbage",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "timeout",
+      "first_pass_validation": false,
+      "latency_ms": 0,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10; attempt 2 failed checks V-01, V-02, V-03, V-04, V-05, V-06, V-07, V-08, V-09, V-10). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_citation",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-03, V-09; attempt 2 failed checks V-03, V-09). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05, V-07; attempt 2 failed checks V-05, V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05; attempt 2 failed checks V-05). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05, V-07; attempt 2 failed checks V-05, V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05; attempt 2 failed checks V-05). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05, V-07; attempt 2 failed checks V-05, V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05, V-07; attempt 2 failed checks V-05, V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05, V-07; attempt 2 failed checks V-05, V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05; attempt 2 failed checks V-05). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05; attempt 2 failed checks V-05). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "always_bad",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-05, V-07; attempt 2 failed checks V-05, V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1799 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1805 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 2400 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T18:30"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1530 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T12:31"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1859 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T18:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1829 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 2370 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T18:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1805 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 480 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T04:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "bad_then_good",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1810 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T17:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-001",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1919 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T19:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-002",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1925 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T19:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-003",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-07; attempt 2 failed checks V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-004",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1915 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T18:56"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "unscheduled"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-005",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1979 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T20:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-006",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1949 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T19:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "no-break"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 2,
+      "case_id": "case-007",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": false,
+      "latency_ms": 20,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.0,
+        "exception_id": 1,
+        "explanation": "Automated suggestion unavailable (attempt 1 failed checks V-07; attempt 2 failed checks V-07). Manager review is required under PUNCH-01.",
+        "policy_ids_cited": [
+          "PUNCH-01"
+        ],
+        "proposed_correction": {
+          "action": "ESCALATE",
+          "kind": null,
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": null
+        }
+      },
+      "source": "fallback",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-end"
+      ],
+      "timestamp_in_window": null,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-008",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1925 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T19:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "break-variant"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-009",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 600 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-13T06:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "overnight"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    },
+    {
+      "adversarial_safe": null,
+      "attempts": 1,
+      "case_id": "case-010",
+      "clean_false_positive_count": 0,
+      "correct_citation": true,
+      "detected_match": true,
+      "detected_rules": [
+        "PUNCH-01"
+      ],
+      "detection_created": 1,
+      "expected_rule": "PUNCH-01",
+      "fault_mode": "naive_latest",
+      "first_pass_validation": true,
+      "latency_ms": 10,
+      "model": "mock",
+      "oracle": {
+        "checks": [
+          "action is allowed",
+          "citations are known and include the expected rule",
+          "timestamp is inside the expected safe window",
+          "corrected weekly work 1930 minutes stays within 2400"
+        ],
+        "passed": true
+      },
+      "proposal": {
+        "confidence": 0.92,
+        "exception_id": 1,
+        "explanation": "Rule PUNCH-01 is supported by the timecard evidence. This bounded proposal is ready for manager review.",
+        "policy_ids_cited": [
+          "PUNCH-01",
+          "PUNCH-02"
+        ],
+        "proposed_correction": {
+          "action": "ADD_PUNCH",
+          "kind": "OUT",
+          "note": null,
+          "punch_id": null,
+          "schedule_id": null,
+          "ts": "2025-03-12T19:00"
+        }
+      },
+      "source": "llm",
+      "tags": [
+        "PUNCH-01",
+        "scheduled",
+        "varied-in"
+      ],
+      "timestamp_in_window": true,
+      "unsafe_escape": false,
+      "validator_passed": true
+    }
+  ],
+  "fault_summaries": [
+    {
+      "case_count": 10,
+      "fallback_count": 10,
+      "fallback_rate": 1.0,
+      "mode": "garbage",
+      "retry_recovered_count": 0,
+      "retry_recovered_rate": 0.0,
+      "unsafe_escape_count": 0,
+      "unsafe_escape_rate": 0.0
+    },
+    {
+      "case_count": 10,
+      "fallback_count": 10,
+      "fallback_rate": 1.0,
+      "mode": "timeout",
+      "retry_recovered_count": 0,
+      "retry_recovered_rate": 0.0,
+      "unsafe_escape_count": 0,
+      "unsafe_escape_rate": 0.0
+    },
+    {
+      "case_count": 10,
+      "fallback_count": 10,
+      "fallback_rate": 1.0,
+      "mode": "bad_citation",
+      "retry_recovered_count": 0,
+      "retry_recovered_rate": 0.0,
+      "unsafe_escape_count": 0,
+      "unsafe_escape_rate": 0.0
+    },
+    {
+      "case_count": 10,
+      "fallback_count": 10,
+      "fallback_rate": 1.0,
+      "mode": "always_bad",
+      "retry_recovered_count": 0,
+      "retry_recovered_rate": 0.0,
+      "unsafe_escape_count": 0,
+      "unsafe_escape_rate": 0.0
+    },
+    {
+      "case_count": 10,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "mode": "bad_then_good",
+      "retry_recovered_count": 10,
+      "retry_recovered_rate": 1.0,
+      "unsafe_escape_count": 0,
+      "unsafe_escape_rate": 0.0
+    },
+    {
+      "case_count": 10,
+      "fallback_count": 2,
+      "fallback_rate": 0.2,
+      "mode": "naive_latest",
+      "retry_recovered_count": 0,
+      "retry_recovered_rate": 0.0,
+      "unsafe_escape_count": 0,
+      "unsafe_escape_rate": 0.0
+    }
+  ],
+  "gates": [
+    {
+      "name": "unsafe proposal escape is zero",
+      "passed": true
+    },
+    {
+      "name": "detection recall is 100%",
+      "passed": true
+    },
+    {
+      "name": "clean false positives are zero",
+      "passed": true
+    },
+    {
+      "name": "correct citation rate is at least 98%",
+      "passed": true
+    },
+    {
+      "name": "always_bad cases all end in fallback",
+      "passed": true
+    },
+    {
+      "name": "bad_citation cases all end in fallback",
+      "passed": true
+    },
+    {
+      "name": "garbage cases all end in fallback",
+      "passed": true
+    },
+    {
+      "name": "timeout cases all end in fallback",
+      "passed": true
+    },
+    {
+      "name": "bad_then_good cases all recover on attempt 2 with the LLM",
+      "passed": true
+    }
+  ],
+  "metrics": {
+    "adversarial_count": 3,
+    "adversarial_safe_count": 3,
+    "adversarial_safe_rate": 1.0,
+    "case_count": 48,
+    "clean_false_positive_count": 0,
+    "correct_citation_count": 46,
+    "correct_citation_rate": 1.0,
+    "detection_matches": 46,
+    "detection_recall": 1.0,
+    "escalation_rate": 0.0,
+    "expected_case_count": 46,
+    "final_llm_pass_rate": 1.0,
+    "first_pass_validation_rate": 1.0,
+    "in_window_count": 27,
+    "in_window_denominator": 27,
+    "in_window_rate": 1.0,
+    "latency_p50_ms": 10,
+    "latency_p95_ms": 10,
+    "unsafe_escape_count": 0,
+    "unsafe_escape_rate": 0.0
+  },
+  "model": "mock",
+  "provider": "mock"
+}
