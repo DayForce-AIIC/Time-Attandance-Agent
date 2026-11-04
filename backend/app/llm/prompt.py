@@ -235,7 +235,8 @@ def build_prompt(
         "employee": {
             "id": _first(employee, "id", "employee_id"),
             "jurisdiction": _get(employee, "jurisdiction"),
-            "ot_eligible": bool(_get(employee, "ot_eligible")),
+            # Preserve unknown eligibility rather than treating it as false.
+            "ot_eligible": _get(employee, "ot_eligible"),
         },
         "schedule": _schedule_context(schedule_for_day),
         "punches": _punch_context(punches_for_day),

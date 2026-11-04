@@ -1,150 +1,299 @@
+
 # ShiftGuard
 
 [![CI](https://github.com/DayForce-AIIC/Time-Attandance-Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/DayForce-AIIC/Time-Attandance-Agent/actions/workflows/ci.yml)
 
-**Evidence-led timecard exception review: deterministic rules detect issues, AI proposes bounded fixes, and managers decide.**
+**Evidence-led timecard exception review.** Deterministic rules detect attendance issues, an LLM proposes bounded corrections, and an authorized HR user makes the decision.
 
-## Demo video
+ShiftGuard is a university innovation challenge prototype. It uses synthetic attendance data by default and does not calculate payroll. A real company integration, production credentials, deployment host, and operational policies must be supplied by the organization before production use.
 
-[![Demo](docs/demo-thumbnail.png)](<VIDEO_URL>)
+## What it does
 
-TODO(human): paste the 10-minute demo link here
+- Detects timecard exceptions using deterministic attendance rules.
+- Generates evidence-grounded correction proposals and validates them against policy and simulated timecard effects.
+- Routes proposals to a human for approve, edit, or reject decisions.
+- Records proposals, decisions, validations, and audit events.
+- Provides a read-only Ask ShiftGuard assistant. It requires a reachable Ollama model; it is unavailable in mock LLM mode.
+- Supports a Supabase-backed HR workflow with sign-in, persisted cases and decisions, a durable analysis worker, writeback status, and per-user assistant conversations.
+- Integrates with a synthetic attendance provider for demos and a vendor-neutral HTTP provider interface for company integration work.
 
-## Problem
+### Data ownership
 
-At payroll close, managers must compare punches, schedules, hours, and policy to resolve missed punches, overtime risks, and other timecard exceptions. Doing that case by case takes time and makes inconsistent or unsupported corrections more likely.
+The company HR/timekeeping platform remains the source of truth for employees, punches, schedules, and leave. ShiftGuard does not create a master employee or attendance database. In Supabase mode it stores workflow data such as event references, exception cases, proposals, validations, decisions, audit events, and assistant conversations. The connector fetches attendance evidence when needed and retains a minimized case snapshot and source hash for review.
 
-ShiftGuard brings the evidence, relevant policy passages, and a validated suggestion into one manager review flow. It is a synthetic-data prototype for AI harness engineering; it does not calculate payroll.
+The bundled company provider is synthetic. The real company API contract, webhook signature format, credentials, field mappings, and correction behavior must be agreed and verified with that company. See [the company integration contract](docs/COMPANY_INTEGRATION_CONTRACT.md).
 
-## User journey
-
-1. A manager opens the queue, where deterministic rules have already identified and sorted exceptions.
-2. The manager opens a case and reviews its punches, schedule, timeline, weekly hours, and policy text alongside an AI proposal and its V-01–V-10 safety checks.
-3. The manager approves, edits, or rejects the proposal. A correction is revalidated and applied only through the manager decision endpoint.
-4. For an overtime-risk case, the manager reviews or edits a proposed schedule end. The simulated timecard must pass the rules checks before the change can be applied.
-5. Demo controls inject model failures. Invalid output is retried once, then escalated without a correction suggestion.
-6. The manager reviews the append-only audit history and verifies its hash chain; the metrics page summarizes safety and workflow outcomes.
-
-## Architecture and harness principles
+## How the system fits together
 
 ```mermaid
 flowchart LR
-  UI[React + TypeScript manager UI] -->|REST / OpenAPI| API[FastAPI]
-  API --> DETECT[Deterministic detection]
-  DETECT --> DB[(SQLite exceptions and constraints)]
-  API --> RETRIEVE[Structured policy retrieval]
-  RETRIEVE --> PROMPT[Trusted evidence + bounded prompt]
-  PROMPT --> LLM[Mock or optional Ollama]
-  LLM --> PARSE[Pydantic parse + deterministic validator]
-  PARSE -->|pass| QUEUE[Manager review]
-  PARSE -->|fail once| RETRY[Retry with validation feedback]
-  RETRY -->|still fails| FALLBACK[Escalate without suggestion]
-  QUEUE --> DECIDE[Approve / edit / reject]
-  DECIDE -->|revalidate, then apply| DB
-  API --> AUDIT[Hash-chained audit events]
-  DETECT --> AUDIT
-  LLM --> AUDIT
-  PARSE --> AUDIT
-  DECIDE --> AUDIT
+  HRIS[Company attendance API or synthetic provider] -->|Event references| API[FastAPI]
+  API -->|Durable event and job| PG[(Supabase workflow database)]
+  PG --> Worker[Analysis worker]
+  Worker -->|Fetch bounded evidence| HRIS
+  Worker --> Rules[Deterministic detection]
+  Rules --> Ollama[Ollama proposal]
+  Ollama --> Validate[Validate and simulate]
+  Validate -->|Case and proposal| PG
+  HR[HR user] --> UI[React web app]
+  UI -->|Supabase Auth token| API
+  API -->|Approved correction only| HRIS
+  UI --> Chat[Ask ShiftGuard]
+  Chat --> API
+  API --> PG
 ```
 
-The model can explain and propose within deterministic constraints. It cannot write timekeeping records. The rules engine, validator, simulation, and decision endpoint own critical logic; the frontend validates API responses with Zod.
+## Requirements
 
-| # | Harness principle | Where it is implemented |
-|---|---|---|
-| H1 | Trusted context only | [`prompt.py`](backend/app/llm/prompt.py), [`policies.py`](backend/app/policies.py) |
-| H2 | Typed contracts | Pydantic schemas, [`openapi.json`](docs/openapi.json), TypeScript and Zod schemas |
-| H3 | Deterministic critical logic | [`rules.py`](backend/app/engine/rules.py), [`validator.py`](backend/app/validator.py), [`decisions.py`](backend/app/decisions.py) |
-| H4 | LLM bounded by constraints | Prompt builder and V-04–V-06 validator checks |
-| H5 | Output validation | V-01–V-10 in [`validator.py`](backend/app/validator.py) |
-| H6 | Simulation before application | In-memory simulation and V-07 in [`simulate.py`](backend/app/engine/simulate.py) and [`validator.py`](backend/app/validator.py) |
-| H7 | Retry, then fallback | [`pipeline.py`](backend/app/pipeline.py) |
-| H8 | Human in the loop | [`decisions.py`](backend/app/decisions.py) is the correction write path |
-| H9 | Traceability | `trace_id`, [`audit.py`](backend/app/audit.py), and the audit verify endpoint |
-| H10 | Untrusted input handling | Note sanitization and delimiting in [`prompt.py`](backend/app/llm/prompt.py); V-10 checks model-controlled fields |
-| H11 | Independent evaluation | [`eval/oracle.py`](eval/oracle.py), deterministic fixtures, and CI gates |
+For the local synthetic demo:
 
-## Key technical decisions
+- macOS, Linux, or another Unix-like environment with `make`
+- Python 3.11 or newer
+- Node.js 20 or newer and npm
+- Git
 
-- Keep exception detection and all critical timekeeping decisions deterministic: [ADR-001](docs/decisions/ADR-001.md).
-- Use one strict flat correction object with action-specific field validation: [ADR-002](docs/decisions/ADR-002.md).
-- Retrieve a small, curated set of structured policy passages rather than adding a vector database: [ADR-003](docs/decisions/ADR-003.md).
-- Simulate candidate changes before a manager can apply them: [ADR-004](docs/decisions/ADR-004.md).
-- Retry invalid model output once with check feedback, then escalate: [ADR-005](docs/decisions/ADR-005.md).
-- Record events in a SQLite hash chain that can be independently verified: [ADR-006](docs/decisions/ADR-006.md).
+For the complete authenticated HR workflow, also install the [Supabase CLI](https://supabase.com/docs/guides/cli) and create a Supabase project. For AI-generated proposals and Ask ShiftGuard, install [Ollama](https://ollama.com/download) and download a model. Docker is optional and only needed for the container workflow.
 
-## Quick start
+## Run the local demo
 
-Requirements: Python 3.11+, Node.js 20+, and npm.
+These steps run the UI and API with a local SQLite database, synthetic attendance fixtures, and the mock LLM. No Supabase project or model download is needed for this first run.
 
-From the repository root:
+### 1. Install dependencies and local configuration
+
+On a fresh checkout, from the repository root:
 
 ```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env.local
 make setup
-cp .env.example .env  # optional; defaults use the offline mock provider
-make seed
 ```
 
-Start the API in one terminal:
+The commands above create local configuration files. If you already have a `.env` or `frontend/.env.local`, skip the matching copy command so your values are preserved. The defaults select `AUTH_MODE=demo`, `ATTENDANCE_PROVIDER=mock`, and `LLM_PROVIDER=mock`.
+
+The API creates and seeds the local SQLite database on first startup. It is stored at `backend/shiftguard.db` by default. To initialize or detect cases manually, run `make seed`; it preserves existing demo data.
+
+### 2. Start the API and web app
+
+Open two terminals at the repository root.
+
+**Terminal 1 — API:**
 
 ```bash
 make backend
 ```
 
-Start the UI in a second terminal:
+**Terminal 2 — frontend:**
 
 ```bash
 make frontend
 ```
 
-Open [http://localhost:5173](http://localhost:5173). The API documentation is at [http://localhost:8000/docs](http://localhost:8000/docs). `make seed` initializes and detects cases in an empty database; it preserves existing demo records. To restore the demo through the app, use **Reset demo data** (this clears the local demo decisions and records).
+Open [http://localhost:5173](http://localhost:5173). The API health endpoint is [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health), and interactive API documentation is at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-The default provider is the offline mock. For optional local inference, install and start Ollama, then run:
+### 3. Try the review flow
+
+1. Open the exception queue and select a case.
+2. Click **Generate AI proposal** and wait for the validated suggestion.
+3. Review the punches, schedule, policy passages, and proposed correction.
+4. Approve, edit, or reject the proposal. An approved correction is simulated and checked again before it is applied to the demo provider.
+5. Open the audit history and metrics to inspect the recorded outcome.
+6. Use the demo fault controls to try `bad_then_good`, `always_bad`, `garbage`, `timeout`, `bad_citation`, and `naive_latest`. These show retry, validation, and escalation behavior.
+7. Use **Reset demo data** to clear and recreate the local demo state.
+
+The local demo uses mock proposal responses, not a live model. Ask ShiftGuard remains unavailable while `LLM_PROVIDER=mock`.
+
+## Enable a local Ollama model
+
+For a Mac M4 demo, a smaller option is `qwen2.5:3b-instruct`. Ollama lists this quantized model at about 1.9 GB and identifies its license as the Qwen Research License. Review the [model page](https://ollama.com/library/qwen2.5%3A3b-instruct) and its license terms before distributing it.
+
+1. Install and start Ollama. The Ollama app can run it in the background; alternatively use `ollama serve`.
+2. Download the model:
+
+   ```bash
+   ollama pull qwen2.5:3b-instruct
+   ```
+
+3. Update the root `.env`:
+
+   ```dotenv
+   LLM_PROVIDER=ollama
+   OLLAMA_URL=http://localhost:11434
+   OLLAMA_MODEL=qwen2.5:3b-instruct
+   ```
+
+4. Restart `make backend`. The local SQLite demo now uses Ollama for proposals, and Ask ShiftGuard is available when the model is reachable.
+
+The API and, in Supabase mode, the worker must be able to reach the configured Ollama URL. For Docker or remote Ollama, `localhost` refers to the container or server itself; set `OLLAMA_URL` to an address reachable from both services.
+
+## Run the authenticated Supabase HR workflow
+
+This path adds HR sign-in, persistent workflow records, event intake, automated background analysis, and persisted assistant conversations. It still uses synthetic attendance data until a company sandbox integration is configured.
+
+### 1. Create and link a Supabase project
+
+Create a Supabase project and install the CLI. From the repository root:
 
 ```bash
-ollama pull qwen2.5:7b-instruct
-LLM_PROVIDER=ollama make backend
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push --dry-run --remote
+make supabase-db-push
 ```
 
-See [`.env.example`](.env.example) for model, database, clock, and metrics settings.
+Apply every migration in `supabase/migrations`. They create workflow tables, user profiles and scope, durable analysis jobs, writeback state, conversation ordering, and worker heartbeats. Review the dry run before applying schema changes.
 
-## Demo walkthrough
+### 2. Create the HR user, organization, and integration
 
-The demo controls appear when the backend's admin demo endpoint is available. Select a fault in **LLM fault mode**, then generate a proposal for an open case. The selected mode is recorded in the audit log.
+In the Supabase Dashboard, create or invite a test HR user under **Authentication → Users**. Public self-registration is not part of this prototype.
 
-| Mode | Expected behavior |
-|---|---|
-| `none` | Mock provider returns the bounded proposal for review. |
-| `bad_then_good` | First attempt fails a check; the retry passes and the proposal reports attempt 2. |
-| `always_bad` | Both attempts fail validation; the case is escalated without an AI correction. |
-| `garbage` | Malformed output is rejected on both attempts, then escalated. |
-| `timeout` | Provider timeouts are audited and the case falls back to escalation. |
-| `bad_citation` | Unretrieved citation is blocked; retry fails and the case is escalated. |
-| `naive_latest` | Uses the latest allowed timestamp; on the seeded e-017 overtime-sensitive case, V-07 blocks the new overtime risk and the retry also escalates. |
+In **SQL Editor**, create an organization and copy the returned UUID:
 
-For repeatable trials, use **Reset demo data**, choose the desired mode, and generate a proposal on an open case. `naive_latest` is meaningful on the e-017 PUNCH-01 case because the latest time creates a simulated overtime finding.
+```sql
+insert into public.organizations (name)
+values ('Example Company')
+returning id;
+```
 
-## API
+Create a profile for the Auth user's UUID and the organization UUID:
 
-The complete generated contract is [`docs/openapi.json`](docs/openapi.json); the interactive Swagger UI is available at `/docs` while the backend is running. Requests from the demo UI include the selected `X-Manager-Id` header.
+```sql
+insert into public.user_profiles (user_id, organization_id, role)
+values ('<auth-user-uuid>', '<organization-uuid>', 'HR');
+```
 
-| Method and path | Purpose |
-|---|---|
-| `GET /api/v1/health` | API and provider health |
-| `POST /api/v1/detect` | Run deterministic exception detection |
-| `GET /api/v1/exceptions` | List manager-scoped exceptions; supports status, severity, rule, employee, and pagination filters |
-| `GET /api/v1/exceptions/{id}` | Case evidence, timecard, policy passages, latest proposal, and decision |
-| `POST /api/v1/exceptions/{id}/propose` | Generate, validate, audit, and persist a proposal |
-| `POST /api/v1/exceptions/{id}/decision` | Approve, edit, or reject; revalidate before applying an allowed correction |
-| `GET /api/v1/exceptions/{id}/audit` | Case audit events |
-| `GET /api/v1/employees/{employee_id}/timecard` | Employee timecard records for a week |
-| `GET /api/v1/policies` and `GET /api/v1/policies/{policy_id}` | Structured policy passages |
-| `GET /api/v1/metrics` | Workflow and safety metrics |
-| `GET /api/v1/audit/verify` | Verify the global audit hash chain |
-| `GET` / `POST /api/v1/admin/llm-mode` | Read or set the local fault-injection mode |
-| `POST /api/v1/admin/reset-demo` | Reset the local demo database and rerun detection |
+Create an active integration and copy its returned UUID:
 
-## Testing
+```sql
+insert into public.integrations (organization_id, provider, display_name)
+values ('<organization-uuid>', 'company_api', 'Synthetic attendance')
+returning id;
+```
+
+For a more detailed walkthrough, see [Supabase Auth setup](docs/AUTH_SETUP.md) and [integration setup](docs/INTEGRATION_SETUP.md).
+
+### 3. Configure the backend and frontend
+
+In the root `.env`, set the project-specific values. Keep the PostgreSQL connection string and webhook secret server-side:
+
+```dotenv
+ENVIRONMENT=staging
+AUTH_MODE=supabase
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_DATABASE_URL=postgresql://...?...sslmode=require
+AUTH_ORGANIZATION_ID=<organization-uuid>
+
+ATTENDANCE_PROVIDER=mock
+ATTENDANCE_INTEGRATION_ID=<integration-uuid>
+INTEGRATION_WEBHOOK_SECRET=<random-secret>
+
+LLM_PROVIDER=ollama
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:3b-instruct
+CORS_ORIGINS=http://localhost:5173
+```
+
+Generate a webhook secret for local development with `openssl rand -hex 32`. Use the database connection string shown by Supabase, with TLS enabled. Never put `SUPABASE_DATABASE_URL`, `INTEGRATION_WEBHOOK_SECRET`, an attendance API token, or a database password in a frontend variable.
+
+Create `frontend/.env.local`:
+
+```dotenv
+VITE_AUTH_MODE=supabase
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+```
+
+The publishable key is intended for browser use; backend authorization still verifies each signed-in user and profile. Restart the API and frontend after changing environment values.
+
+### 4. Start all three application processes
+
+Use three terminals at the repository root.
+
+**Terminal 1 — API:**
+
+```bash
+make backend
+```
+
+**Terminal 2 — analysis worker:**
+
+```bash
+make worker
+```
+
+**Terminal 3 — frontend:**
+
+```bash
+make frontend
+```
+
+Sign in with the provisioned HR account at [http://localhost:5173](http://localhost:5173).
+
+### 5. Send and review a synthetic attendance event
+
+With all three processes running, open a fourth terminal:
+
+```bash
+cd backend
+PYTHONPATH=. ../.venv/bin/python scripts/send_synthetic_company_event.py
+```
+
+The script sends a signed synthetic event for the bundled missing-out-punch record. The API stores the event and a durable job in Supabase. The worker fetches the synthetic attendance evidence, runs deterministic detection, asks Ollama for a proposal, validates the result, and persists the case and proposal. Refresh the HR queue to review it.
+
+Check readiness at [http://localhost:8000/api/v1/health/ready](http://localhost:8000/api/v1/health/ready). In Supabase mode it reports the database, attendance provider, Ollama model, and recent worker heartbeat; it returns HTTP 503 while a required dependency is not ready.
+
+After reviewing the case, approve, edit, or reject it in the HR UI. An approval can call the mock provider's correction endpoint. Workflow decisions and writeback results persist in Supabase. The mock provider's attendance record and simulated correction live in API process memory and reset when the API restarts; the Supabase workflow history remains.
+
+Ask ShiftGuard questions are stored per signed-in HR user and organization. The user can reopen or delete their own conversations.
+
+## Connect a real company attendance API
+
+Use a company's approved nonproduction API and credentials before using real employee data. Set the backend to `ATTENDANCE_PROVIDER=http`, then configure:
+
+```dotenv
+ATTENDANCE_API_BASE_URL=https://<company-api-host>
+ATTENDANCE_API_TOKEN=<server-only-integration-token>
+ATTENDANCE_API_TIMEOUT_SECONDS=10
+```
+
+The adapter contract expects versioned timecard reads, a bounded employee-history read, a cursor-based event feed, and an idempotent correction endpoint with source-version checks. The company must confirm the field mapping, authorization, event delivery and retry rules, HMAC signing format, version semantics, correction types, and response behavior. The prototype webhook HMAC convention is provisional and must not be assumed to match a real company's standard.
+
+Read [the full company API contract](docs/COMPANY_INTEGRATION_CONTRACT.md) and [integration setup](docs/INTEGRATION_SETUP.md) before connecting a sender. The signed event endpoint is `POST /integrations/v1/events/attendance-changed`. `backend/scripts/sync_company_attendance.py` can recover missed events after the company confirms its cursor feed; schedule it in the hosting environment as appropriate. Do not run the HTTP provider with invented credentials or against a production tenant.
+
+## Deploy and operate
+
+Supabase hosts the Auth and PostgreSQL services; it does not host the FastAPI process, the analysis worker, or Ollama. Deploy the API and worker as separate services, with the same server-side settings and access to Supabase, the company API, and Ollama. The frontend can be hosted separately and should route `/api/v1` and `/integrations/v1` to the API.
+
+For a local container build from the repository root:
+
+```bash
+docker build -f backend/Dockerfile -t shiftguard-backend:local .
+```
+
+Follow [Operations and deployment](docs/OPERATIONS.md) for API and worker container commands, secrets, readiness checks, rate limits, optional alerts, backups, restore drills, and failure triage. The production settings gate requires Supabase Auth, HTTPS Supabase configuration, explicit HTTPS CORS origins, the HTTP attendance provider, and Ollama. Passing the configuration gate does not itself deploy or certify a production system.
+
+Keep development and rehearsal projects on synthetic data. Confirm the organization's privacy, retention, access, and backup requirements before processing employee information. Supabase Free projects may pause after inactivity and are intended here for development and synthetic-data demonstrations.
+
+## Useful API routes
+
+Interactive request and response schemas are available at `/docs` while the API is running. The generated contract is [`docs/openapi.json`](docs/openapi.json).
+
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/health` | API and configured LLM health |
+| `GET` | `/api/v1/health/ready` | Database, worker, attendance provider, and model readiness |
+| `GET` | `/api/v1/me` | Signed-in user profile and organization |
+| `GET` | `/api/v1/exceptions` | Manager-scoped demo cases or organization-scoped HR cases |
+| `GET` | `/api/v1/exceptions/{id}` | Case evidence, policy passages, proposal, and decision |
+| `POST` | `/api/v1/exceptions/{id}/propose` | Generate and validate a proposal |
+| `POST` | `/api/v1/exceptions/{id}/decision` | Approve, edit, or reject a proposal |
+| `POST` | `/integrations/v1/events/attendance-changed` | Verify and queue a signed company attendance event |
+| `POST` | `/api/v1/assistant/query` | Ask an in-scope question through reachable Ollama |
+| `GET` | `/api/v1/assistant/conversations` | List the signed-in HR user's saved conversations |
+| `GET` | `/api/v1/audit/verify` | Verify the audit chain |
+
+## Tests and quality checks
+
+These commands are available for contributors. Run them from the repository root:
 
 ```bash
 make test
@@ -152,74 +301,24 @@ make eval
 make all
 ```
 
-`make test` runs backend unit, API integration, and OpenAPI contract tests with an 85% coverage floor, followed by the Vitest/React Testing Library suite. `make eval` runs 48 labelled scenarios through the mock-provider pipeline and independent safety oracle. `make all` adds Ruff lint/format, mypy, OpenAPI and generated-type sync checks, then runs all three CI job suites. The GitHub Actions workflow has separate backend, evaluation, and frontend jobs.
+`make test` runs backend and frontend test suites. `make eval` runs the labelled mock-provider evaluation. `make all` runs lint, format, type, OpenAPI sync, test, evaluation, and frontend build checks used by CI. See [`eval/results.md`](eval/results.md) for the evaluation method and bundled synthetic-data results.
 
-## Evaluation results
+## Project documentation
 
-Mock-provider evaluation; 48 labelled cases with 46 expected findings. Rates use expected finding cases unless stated otherwise. These are results on the bundled synthetic data, not production performance claims.
+- [Authentication and HR account setup](docs/AUTH_SETUP.md)
+- [Synthetic and company integration setup](docs/INTEGRATION_SETUP.md)
+- [Company API contract](docs/COMPANY_INTEGRATION_CONTRACT.md)
+- [Operations and deployment](docs/OPERATIONS.md)
+- [Supabase implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [OpenAPI schema](docs/openapi.json)
+- [Model license notes](docs/MODEL_LICENCE.md)
 
-| Metric | Result |
-|---|---:|
-| Detection recall | 100.0% (46/46) |
-| Clean false positives | 0 |
-| First-pass validation | 100.0% |
-| Final LLM pass | 100.0% |
-| Escalation rate | 0.0% |
-| Correct citation | 100.0% (46/46) |
-| In-window timestamps | 100.0% (27/27) |
-| Unsafe proposal escapes | 0 (0.0%) |
-| Adversarial block/ignore | 100.0% (3/3) |
-| Proposal latency p50 / p95 | 10 ms / 10 ms |
-
-Fault-injection outcomes from [`eval/results.md`](eval/results.md):
-
-| Mode | Fallback | Retry recovered | Unsafe escaped |
-|---|---:|---:|---:|
-| `garbage` | 100.0% (10/10) | 0.0% | 0 |
-| `timeout` | 100.0% (10/10) | 0.0% | 0 |
-| `bad_citation` | 100.0% (10/10) | 0.0% | 0 |
-| `always_bad` | 100.0% (10/10) | 0.0% | 0 |
-| `bad_then_good` | 0.0% | 100.0% (10/10) | 0 |
-| `naive_latest` | 20.0% (2/10) | 0.0% | 0 |
-
-The current local suite has 72 backend tests at 88.62% coverage and 9 frontend tests. Reproduce the evaluation with `make eval`; the detailed gates and method are in [`eval/results.md`](eval/results.md).
-
-## Safety and guardrails
-
-- Detection, policy thresholds, timestamp windows, validation, simulation, and correction application are deterministic.
-- The model receives only case evidence and retrieved policy text; citations must be retrieved and include the rule involved.
-- V-01–V-10 check schema, case identity, citations, allowed action, timestamp window, target, simulation effects, confidence, explanation hygiene, and injection echo.
-- Invalid output gets one retry. A second failure creates an `ESCALATE` fallback with no suggested timecard correction.
-- Approve and edit requests are validated again at decision time. Rejection needs a note; repeated decisions are rejected by state checks.
-- Proposals and decisions are auditable. SQLite blocks ordinary audit-row updates/deletes, and the verify endpoint recomputes the chain.
-
-## Model licence
-
-Mock inference is the default and requires no model weights or external service. The optional Ollama configuration uses `qwen2.5:7b-instruct`; the upstream Qwen2.5-7B-Instruct repository identifies its license as Apache-2.0. See [`docs/MODEL_LICENCE.md`](docs/MODEL_LICENCE.md) and review the model's license and runtime terms before distribution.
-
-## Limitations and future work
-
-The prototype uses synthetic data and a demo `X-Manager-Id` header; it has no real authentication, identity-backed access control, or tenant isolation. Times are naive site-local values. Payroll calculation, daylight-saving transitions, multiple shifts per day, mobile layouts, and internationalization are out of scope. Do not use the local demo with real employee records or expose it to the public internet.
-
-Future work could add real timekeeping integrations, additional jurisdictions and policy handbooks, stronger identity and access controls, time-zone-aware shifts, multiple shifts per day, and carefully governed learning from manager edits.
-
-## Project layout
+## Repository layout
 
 ```text
-backend/        FastAPI API, policy data, rules, proposal pipeline, decisions, and tests
-frontend/       React + TypeScript manager workflow and frontend tests
-docs/           OpenAPI contract, architecture, decisions, license note, demo, and slides
-eval/           Labelled cases, independent oracle, evaluation runner, and results
+backend/        FastAPI API, rules, providers, worker, policies, and backend tests
+frontend/       React + TypeScript HR review UI and Ask ShiftGuard
+docs/           Setup, integration contract, operations, ADRs, and OpenAPI
+eval/           Labelled synthetic scenarios and independent safety evaluation
+supabase/       Versioned Supabase workflow migrations
 ```
-
-## Team and roles
-
-For a five-person team, assign one lead to each work area:
-
-| Work area | Focus |
-|---|---|
-| Backend and rules | API contracts, deterministic detection, SQLite, and decisions |
-| AI harness | Prompting, providers, validation, retries, and audit events |
-| Frontend | Manager queue, case review, accessibility, and metrics |
-| QA and evaluation | Unit/integration/contract tests, oracle, and CI gates |
-| Product and demo | User journey, demo rehearsal, evidence, and presentation |

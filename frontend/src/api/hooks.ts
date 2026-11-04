@@ -3,6 +3,11 @@ import { apiFetch } from "./client";
 import {
   auditEventSchema,
   auditVerifySchema,
+  assistantAnswerSchema,
+  conversationDeleteSchema,
+  conversationDetailSchema,
+  conversationSummarySchema,
+  currentUserSchema,
   decisionOutSchema,
   exceptionDetailSchema,
   exceptionOutSchema,
@@ -17,6 +22,7 @@ import { z } from "zod";
 
 const API = "/api/v1";
 const exceptionListSchema = z.array(exceptionOutSchema);
+const conversationListSchema = z.array(conversationSummarySchema);
 const detectOutSchema = z.object({
   as_of: z.string(),
   created: z.number(),
@@ -26,12 +32,19 @@ const detectOutSchema = z.object({
 
 export interface ExceptionFilters {
   status?: ExceptionStatus | "active" | "all";
-  severity?: "low" | "medium" | "high";
+  severity?: "low" | "medium" | "high" | "critical";
   rule_id?: string;
 }
 
-const ACTIVE_STATUSES: ExceptionStatus[] = ["OPEN", "PENDING_REVIEW", "ESCALATED"];
-const severityOrder = { high: 0, medium: 1, low: 2 };
+const ACTIVE_STATUSES: ExceptionStatus[] = [
+  "OPEN",
+  "PENDING_REVIEW",
+  "ESCALATED",
+  "WRITEBACK_PENDING",
+  "WRITEBACK_FAILED",
+];
+const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+export type WorkflowId = number | string;
 
 export function useExceptions(filters: ExceptionFilters = {}) {
   return useQuery({
@@ -50,22 +63,21 @@ export function useExceptions(filters: ExceptionFilters = {}) {
       return list.flat().sort((a, b) =>
         severityOrder[a.severity] - severityOrder[b.severity]
         || a.work_date.localeCompare(b.work_date)
-        || a.id - b.id,
+        || String(a.id).localeCompare(String(b.id)),
       );
     },
   });
 }
 
 export function useExceptionDetail(id: number | string | undefined) {
-  const normalizedId = id === undefined ? undefined : Number(id);
   return useQuery({
-    queryKey: ["exception", normalizedId],
+    queryKey: ["exception", id],
     queryFn: () => apiFetch(`${API}/exceptions/${id}`, {}, exceptionDetailSchema),
     enabled: id !== undefined,
   });
 }
 
-export function usePropose(id: number) {
+export function usePropose(id: WorkflowId) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch(`${API}/exceptions/${id}/propose`, { method: "POST" }, proposalOutSchema),
@@ -85,7 +97,7 @@ export interface DecisionBody {
   note?: string;
 }
 
-export function useDecide(id: number) {
+export function useDecide(id: WorkflowId) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: DecisionBody) => apiFetch(`${API}/exceptions/${id}/decision`, {
@@ -102,7 +114,7 @@ export function useDecide(id: number) {
   });
 }
 
-export function useAudit(id: number, enabled = true) {
+export function useAudit(id: WorkflowId, enabled = true) {
   return useQuery({
     queryKey: ["audit", id],
     queryFn: () => apiFetch(`${API}/exceptions/${id}/audit`, {}, z.array(auditEventSchema)),
@@ -110,8 +122,74 @@ export function useAudit(id: number, enabled = true) {
   });
 }
 
+export function useRetryWriteback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (decisionId: string) => apiFetch(
+      `${API}/decisions/${decisionId}/retry-writeback`,
+      { method: "POST" },
+      decisionOutSchema,
+    ),
+    onSuccess: async (decision) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["exception", decision.exception_id] }),
+        queryClient.invalidateQueries({ queryKey: ["exceptions"] }),
+      ]);
+    },
+  });
+}
+
 export function useMetrics() {
   return useQuery({ queryKey: ["metrics"], queryFn: () => apiFetch(`${API}/metrics`, {}, metricsSchema) });
+}
+
+export function useAssistantQuery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { question: string; conversation_id: string | null }) => apiFetch(`${API}/assistant/query`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }, assistantAnswerSchema),
+    onSuccess: async (answer) => {
+      if (answer.conversation_id) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["assistant-conversations"] }),
+          queryClient.invalidateQueries({ queryKey: ["assistant-conversation", answer.conversation_id] }),
+        ]);
+      }
+    },
+  });
+}
+
+export function useAssistantConversations(enabled: boolean) {
+  return useQuery({
+    queryKey: ["assistant-conversations"],
+    queryFn: () => apiFetch(`${API}/assistant/conversations`, {}, conversationListSchema),
+    enabled,
+  });
+}
+
+export function useAssistantConversation(id: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ["assistant-conversation", id],
+    queryFn: () => apiFetch(`${API}/assistant/conversations/${id}`, {}, conversationDetailSchema),
+    enabled: enabled && Boolean(id),
+  });
+}
+
+export function useDeleteAssistantConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`${API}/assistant/conversations/${id}`, {
+      method: "DELETE",
+    }, conversationDeleteSchema),
+    onSuccess: async (_result, id) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["assistant-conversations"] }),
+        queryClient.removeQueries({ queryKey: ["assistant-conversation", id] }),
+      ]);
+    },
+  });
 }
 
 export function useHealth() {
@@ -122,10 +200,21 @@ export function useHealth() {
   });
 }
 
-export function useLlmMode() {
+export function useCurrentUser(enabled = true) {
+  return useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => apiFetch(`${API}/me`, {}, currentUserSchema),
+    enabled,
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
+export function useLlmMode(enabled = true) {
   return useQuery({
     queryKey: ["llm-mode"],
     queryFn: () => apiFetch(`${API}/admin/llm-mode`, {}, llmModeSchema),
+    enabled,
     retry: false,
     staleTime: 5_000,
   });

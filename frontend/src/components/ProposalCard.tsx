@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ExceptionOut, ProposalOut } from "../api/schemas";
 import { ErrorBanner, formatDateShort, formatTime } from "./common";
+import { useAuth } from "../auth/AuthContext";
 
 const VALIDATOR_IDS = Array.from({ length: 10 }, (_, index) => `V-${String(index + 1).padStart(2, "0")}`);
 
@@ -57,6 +58,7 @@ export function ProposalCard({
   onApprove?: () => Promise<unknown> | void;
   onPolicyClick?: (policyId: string) => void;
 }) {
+  const auth = useAuth();
   const [error, setError] = useState<unknown>(null);
   const correction = proposal.proposal.proposed_correction;
   const escalated = correction.action === "ESCALATE";
@@ -81,7 +83,7 @@ export function ProposalCard({
         <span className="proposal-meta">{proposal.model} · {proposal.latency_ms} ms</span>
       </div>
       <div className="proposal-heading-row">
-        <div><p className="eyebrow">Validated suggestion</p><h2 id="proposal-heading">Manager review</h2></div>
+        <div><p className="eyebrow">Validated suggestion</p><h2 id="proposal-heading">{auth.enabled ? "HR review" : "Manager review"}</h2></div>
         <span className="attempt-pill">{proposal.attempts === 1 ? "Passed on first attempt" : `Passed on attempt ${proposal.attempts}`}</span>
       </div>
       <p className="proposal-explanation">{proposal.proposal.explanation}</p>

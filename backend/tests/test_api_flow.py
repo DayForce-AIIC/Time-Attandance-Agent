@@ -55,7 +55,8 @@ def test_demo_controls_hidden_when_disabled(tmp_path: Path):
     app = create_app(
         Settings(
             db_path=tmp_path / "disabled.db",
-            auto_seed=False,
+            auth_mode="demo",
+            auto_seed=True,
             enable_demo_controls=False,
         )
     )
@@ -70,3 +71,78 @@ def test_fault_fixture_changes_the_live_provider_mode(client, fault):
     response = client.get("/api/v1/admin/llm-mode")
     assert response.status_code == 200
     assert response.json()["mode"] == "garbage"
+
+
+def test_assistant_requires_ollama_in_mock_mode(client):
+    response = client.post(
+        "/api/v1/assistant/query", json={"question": "Which cases have missing punches?"}
+    )
+
+    assert response.status_code == 503
+    assert "requires Ollama" in response.json()["detail"]
+
+
+def test_assistant_requires_reachable_ollama(client, monkeypatch):
+    client.app.state.settings.llm_provider = "ollama"
+    monkeypatch.setattr("app.api.ollama_model_is_available", lambda _settings: False)
+    response = client.post(
+        "/api/v1/assistant/query", json={"question": "Which cases have missing punches?"}
+    )
+
+    assert response.status_code == 503
+    assert "configured Ollama model" in response.json()["detail"]
+
+
+def test_assistant_answers_with_manager_scoped_sources_without_writing(ollama_client):
+    before_audit = ollama_client.get("/api/v1/audit/verify").json()["events_checked"]
+    response = ollama_client.post(
+        "/api/v1/assistant/query", json={"question": "Which cases have missing punches?"}
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert "Priya Raman" in body["answer"]
+    assert body["sources"]
+    assert all(source["kind"] in {"case", "policy"} for source in body["sources"])
+    assert all("Jordan Blake" not in source["excerpt"] for source in body["sources"])
+    assert ollama_client.get("/api/v1/audit/verify").json()["events_checked"] == before_audit
+
+
+def test_assistant_does_not_return_another_managers_employee(ollama_client):
+    response = ollama_client.post(
+        "/api/v1/assistant/query",
+        headers={"X-Manager-Id": "m-002"},
+        json={"question": "Show the open cases for Priya Raman."},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sources"] == []
+    assert "could not find" in body["answer"].lower()
+
+
+def test_assistant_returns_policy_passages_for_policy_questions(ollama_client):
+    response = ollama_client.post(
+        "/api/v1/assistant/query", json={"question": "What policy applies to missed punches?"}
+    )
+
+    assert response.status_code == 200
+    policy_sources = [source for source in response.json()["sources"] if source["kind"] == "policy"]
+    assert policy_sources
+    assert any(source["source_id"] == "policy:PUNCH-01" for source in policy_sources)
+
+
+def test_assistant_declines_absence_prediction_and_unmodeled_leave_statuses(ollama_client):
+    absence = ollama_client.post(
+        "/api/v1/assistant/query", json={"question": "Who is likely to be absent tomorrow?"}
+    )
+    leave = ollama_client.post(
+        "/api/v1/assistant/query", json={"question": "How do I reconcile WFH with half-day leave?"}
+    )
+
+    assert absence.status_code == 200
+    assert absence.json()["sources"] == []
+    assert "does not predict" in absence.json()["answer"]
+    assert leave.status_code == 200
+    assert leave.json()["sources"] == []
+    assert "does not yet store WFH" in leave.json()["answer"]

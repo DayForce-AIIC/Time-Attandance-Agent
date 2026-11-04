@@ -34,6 +34,9 @@ def decide(
     body: DecisionIn,
     clock: Clock,
     book: PolicyBook,
+    *,
+    actor_id: str | None = None,
+    hr_scope: bool = False,
 ) -> DecisionOut:
     """Apply a manager decision after current-state authorization and validation."""
     exc = repo.get_exception(conn, exc_id)
@@ -44,8 +47,9 @@ def decide(
     employee = repo.get_employee(conn, str(exc["employee_id"]))
     if employee is None:
         raise NotFound(f"employee {exc['employee_id']} was not found")
-    if str(employee["manager_id"]) != manager_id:
+    if not hr_scope and str(employee["manager_id"]) != manager_id:
         raise Forbidden("manager does not own this employee")
+    decided_by = actor_id or manager_id
     proposal_row = repo.get_latest_proposal(conn, exc_id)
     if proposal_row is None:
         raise StateConflict(f"exception {exc_id} has no proposal to decide")
@@ -100,7 +104,7 @@ def decide(
         current_employee = repo.get_employee(conn, str(current_exc["employee_id"]))
         if current_employee is None:
             raise NotFound(f"employee {current_exc['employee_id']} was not found")
-        if str(current_employee["manager_id"]) != manager_id:
+        if not hr_scope and str(current_employee["manager_id"]) != manager_id:
             raise Forbidden("manager does not own this employee")
         current_proposal = repo.get_latest_proposal(conn, exc_id)
         if current_proposal is None or int(current_proposal["id"]) != int(proposal_row["id"]):
@@ -111,7 +115,7 @@ def decide(
             exception_id=exc_id,
             proposal_id=int(proposal_row["id"]),
             action=body.action.value,
-            manager_id=manager_id,
+            manager_id=decided_by,
             note=note,
             final_correction_json=final_json,
             decided_at=decided_at,
@@ -134,7 +138,8 @@ def decide(
                 "decision_id": decision_id,
                 "proposal_id": int(proposal_row["id"]),
                 "action": body.action.value,
-                "manager_id": manager_id,
+                "manager_id": decided_by,
+                "manager_scope": manager_id,
                 "note": note,
                 "resulting_status": result_status.value,
                 "final_correction": correction.model_dump(mode="json") if correction else None,
@@ -161,7 +166,7 @@ def decide(
         exception_id=exc_id,
         proposal_id=int(proposal_row["id"]),
         action=body.action,
-        manager_id=manager_id,
+        manager_id=decided_by,
         note=note,
         final_correction=correction,
         decided_at=decided_at,

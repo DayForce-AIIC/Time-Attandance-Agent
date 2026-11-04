@@ -3,6 +3,7 @@ import type { DecisionBody } from "../api/hooks";
 import type { DecisionOut, ExceptionOut, ProposalOut, ProposedCorrection } from "../api/schemas";
 import { ErrorBanner } from "./common";
 import { EditCorrectionForm } from "./EditCorrectionForm";
+import { useAuth } from "../auth/AuthContext";
 
 export function DecisionPanel({
   exception,
@@ -13,6 +14,7 @@ export function DecisionPanel({
   proposal: ProposalOut;
   onDecision: (body: DecisionBody) => Promise<DecisionOut>;
 }) {
+  const auth = useAuth();
   const [mode, setMode] = useState<"idle" | "edit" | "reject">("idle");
   const [note, setNote] = useState("");
   const [error, setError] = useState<unknown>(null);
@@ -49,7 +51,7 @@ export function DecisionPanel({
     <section className="panel decision-panel" aria-labelledby="decision-heading">
       <div className="panel-heading">
         <div><p className="eyebrow">Human decision</p><h2 id="decision-heading">Review and decide</h2></div>
-        <span className="decision-required">Manager approval required</span>
+        <span className="decision-required">{auth.enabled ? "HR approval required" : "Manager approval required"}</span>
       </div>
       {error ? <ErrorBanner error={error} /> : null}
       {message ? <p className="success-note" role="status">✓ {message}</p> : null}

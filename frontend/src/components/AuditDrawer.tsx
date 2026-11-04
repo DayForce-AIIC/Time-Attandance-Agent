@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAudit, useVerifyAudit } from "../api/hooks";
 import { ErrorBanner, LoadingState } from "./common";
 
-export function AuditDrawer({ exceptionId }: { exceptionId: number }) {
+export function AuditDrawer({ exceptionId }: { exceptionId: number | string }) {
   const [open, setOpen] = useState(false);
   const [verifyRequested, setVerifyRequested] = useState(false);
   const events = useAudit(exceptionId, open);

@@ -1,21 +1,36 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiFetch, ApiError } from "../api/client";
 import { auditEventSchema, healthSchema, proposalOutSchema } from "../api/schemas";
 import { DecisionPanel } from "../components/DecisionPanel";
+import { AssistantPage } from "../pages/AssistantPage";
 import { EditCorrectionForm } from "../components/EditCorrectionForm";
 import { ExceptionTable } from "../components/ExceptionTable";
 import { ManagerSwitcher } from "../components/ManagerSwitcher";
 import { ProposalCard, ValidationChecklist } from "../components/ProposalCard";
 import { ErrorBanner, SeverityBadge } from "../components/common";
 import { ManagerProvider } from "../context/ManagerContext";
+import { AuthProvider } from "../auth/AuthContext";
 import { exceptionSample, fallbackProposal } from "./samples";
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
+
+function renderWithAuth(ui: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{ui}</AuthProvider>
+    </QueryClientProvider>,
+  );
+}
 
 describe("manager review components", () => {
   it("ExceptionTable renders employee rows and review links", () => {
@@ -47,7 +62,7 @@ describe("manager review components", () => {
   });
 
   it("ProposalCard identifies a fallback and disables approval for ESCALATE", () => {
-    render(<ProposalCard exception={exceptionSample} proposal={fallbackProposal} onApprove={vi.fn()} />);
+    renderWithAuth(<ProposalCard exception={exceptionSample} proposal={fallbackProposal} onApprove={vi.fn()} />);
     expect(screen.getByText("Fallback: escalated, no AI suggestion")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Approve suggestion" })).toBeDisabled();
   });
@@ -73,7 +88,7 @@ describe("manager review components", () => {
   it("DecisionPanel requires a note before rejecting", async () => {
     const user = userEvent.setup();
     const onDecision = vi.fn();
-    render(<DecisionPanel exception={exceptionSample} proposal={fallbackProposal} onDecision={onDecision} />);
+    renderWithAuth(<DecisionPanel exception={exceptionSample} proposal={fallbackProposal} onDecision={onDecision} />);
     await user.click(screen.getByRole("button", { name: "Reject" }));
     await user.click(screen.getByRole("button", { name: "Confirm rejection" }));
     expect(await screen.findByText("A note is required when rejecting this proposal.")).toBeInTheDocument();
@@ -126,5 +141,54 @@ describe("manager review components", () => {
     await apiFetch("/api/v1/health", {}, healthSchema);
     const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
     expect(new Headers(init.headers).get("X-Manager-Id")).toBe("m-002");
+  });
+
+  it("AssistantPage shows a read-only answer with its case source", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const payload = url.endsWith("/api/v1/health")
+        ? {
+            status: "ok",
+            provider: "ollama",
+            model: "test-ollama",
+            llm_reachable: true,
+            now: "2025-03-13T20:00",
+          }
+        : {
+            answer: "Priya Raman has an open missing out-punch case.",
+            sources: [{
+              source_id: "case:1",
+              kind: "case",
+              label: "Priya Raman · PUNCH-01 · 2025-03-12",
+              excerpt: "Manager-scoped timecard evidence.",
+              href: "/exceptions/1",
+            }],
+            model: "test-ollama",
+            used_fallback: false,
+            conversation_id: null,
+          };
+      return { ok: true, status: 200, text: async () => JSON.stringify(payload) };
+    }));
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManagerProvider>
+          <AuthProvider><MemoryRouter><AssistantPage /></MemoryRouter></AuthProvider>
+        </ManagerProvider>
+      </QueryClientProvider>,
+    );
+
+    const quickQuestion = await screen.findByRole("button", {
+      name: "Show all open attendance cases.",
+    });
+    await waitFor(() => expect(quickQuestion).toBeEnabled());
+    await user.click(quickQuestion);
+
+    expect(await screen.findByText("Priya Raman has an open missing out-punch case.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Priya Raman · PUNCH-01/ })).toHaveAttribute("href", "/exceptions/1");
+    expect(screen.getByText(/The assistant cannot change timecards or approve decisions/)).toBeInTheDocument();
   });
 });

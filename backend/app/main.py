@@ -18,8 +18,11 @@ from app.config import Settings, get_settings
 from app.db import get_conn, init_db
 from app.detection import run_detection
 from app.errors import BadRequest, Forbidden, NotFound, StateConflict, ValidationFailed
+from app.integrations.factory import make_attendance_provider
+from app.integrations.routes import router as integration_router
 from app.llm.factory import make_llm_client
 from app.logging_setup import configure_logging, trace_id_var
+from app.ops_alerts import OperationalAlertReporter
 from app.policies import load_policies
 from app.schemas import ErrorOut, FaultMode
 from app.seed import seed
@@ -37,6 +40,19 @@ DESCRIPTION = (
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create a fully configured ShiftGuard API application."""
     runtime_settings = settings or get_settings()
+    if runtime_settings.auth_mode == "supabase":
+        missing_auth_settings = []
+        if not runtime_settings.supabase_url or not runtime_settings.supabase_url.strip():
+            missing_auth_settings.append("SUPABASE_URL")
+        if (
+            runtime_settings.supabase_database_url is None
+            or not runtime_settings.supabase_database_url.get_secret_value().strip()
+        ):
+            missing_auth_settings.append("SUPABASE_DATABASE_URL")
+        if runtime_settings.auth_organization_id is None:
+            missing_auth_settings.append("AUTH_ORGANIZATION_ID")
+        if missing_auth_settings:
+            raise ValueError("AUTH_MODE=supabase requires: " + ", ".join(missing_auth_settings))
     configure_logging()
     book = load_policies()
     db_path: str | Path = runtime_settings.db_path
@@ -69,11 +85,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.book = book
     application.state.fault_mode = FaultMode.NONE
     application.state.llm = make_llm_client(runtime_settings, lambda: application.state.fault_mode)
+    application.state.attendance_provider = make_attendance_provider(runtime_settings)
+    application.state.operational_alerts = OperationalAlertReporter(runtime_settings)
     application.include_router(router)
+    application.include_router(integration_router)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
-        allow_credentials=True,
+        allow_origins=[
+            origin.strip() for origin in runtime_settings.cors_origins.split(",") if origin.strip()
+        ],
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -133,8 +154,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @application.exception_handler(HTTPException)
     async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
-        code = {403: "forbidden", 404: "not_found"}.get(exc.status_code, "http_error")
+        code = {
+            401: "unauthorized",
+            403: "forbidden",
+            404: "not_found",
+            503: "service_unavailable",
+        }.get(exc.status_code, "http_error")
         return _error_response(exc.status_code, str(exc.detail), code)
+
+    @application.on_event("shutdown")
+    def close_attendance_provider() -> None:
+        application.state.attendance_provider.close()
 
     return application
 

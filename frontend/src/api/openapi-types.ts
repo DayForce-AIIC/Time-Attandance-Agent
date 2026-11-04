@@ -48,6 +48,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assistant/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the signed-in HR user's saved conversations
+         * @description Return conversation summaries scoped to the authenticated HR user.
+         */
+        get: operations["list_assistant_conversations_api_v1_assistant_conversations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reopen one of the signed-in HR user's conversations
+         * @description Load one private conversation and its persisted citations.
+         */
+        get: operations["assistant_conversation_detail_api_v1_assistant_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete one of the signed-in HR user's conversations
+         * @description Delete a private conversation and its messages for retention control.
+         */
+        delete: operations["delete_assistant_conversation_api_v1_assistant_conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a manager's read-only attendance question
+         * @description Answer attendance questions only when the configured Ollama model is available.
+         */
+        post: operations["assistant_query_api_v1_assistant_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit/verify": {
         parameters: {
             query?: never;
@@ -68,6 +132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/decisions/{decision_id}/retry-writeback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry an approved company correction using its original idempotency key
+         * @description Retry a pending/failed writeback without creating a second HR decision.
+         */
+        post: operations["retry_decision_writeback_api_v1_decisions__decision_id__retry_writeback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/detect": {
         parameters: {
             query?: never;
@@ -79,7 +163,7 @@ export interface paths {
         put?: never;
         /**
          * Run exception detection
-         * @description Run deterministic timecard checks and persist current findings.
+         * @description Run deterministic checks only for the authenticated user's permitted team.
          */
         post: operations["detect_api_v1_detect_post"];
         delete?: never;
@@ -217,9 +301,49 @@ export interface paths {
         };
         /**
          * Check API and LLM availability
-         * @description Report API health and whether the configured LLM provider responds.
+         * @description Report API health and whether the configured provider/model is available.
          */
         get: operations["health_api_v1_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check readiness of the database, worker, provider, and model
+         * @description Report operational dependencies for a platform readiness probe.
+         */
+        get: operations["readiness_api_v1_health_ready_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated ShiftGuard user and role
+         * @description Return the backend-verified user profile used to authorize API requests.
+         */
+        get: operations["current_user_api_v1_me_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -288,6 +412,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integrations/v1/events/attendance-changed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive a signed attendance change event
+         * @description Authenticate, validate, and idempotently record a minimal webhook envelope.
+         */
+        post: operations["receive_attendance_event_integrations_v1_events_attendance_changed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -297,6 +441,51 @@ export interface components {
          * @enum {string}
          */
         Action: "ADD_PUNCH" | "MODIFY_PUNCH" | "REMOVE_PUNCH" | "ADJUST_SCHEDULE" | "FLAG_FOR_APPROVAL" | "ESCALATE";
+        /**
+         * AssistantAnswer
+         * @description Read-only answer plus the exact evidence shown to its manager.
+         */
+        AssistantAnswer: {
+            /** Answer */
+            answer: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Model */
+            model: string;
+            /** Sources */
+            sources: components["schemas"]["AssistantSource"][];
+            /** Used Fallback */
+            used_fallback: boolean;
+        };
+        /**
+         * AssistantQuestion
+         * @description Bounded manager question for the read-only attendance assistant.
+         */
+        AssistantQuestion: {
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Question */
+            question: string;
+        };
+        /**
+         * AssistantSource
+         * @description One manager-authorized record or policy excerpt used in an answer.
+         */
+        AssistantSource: {
+            /** Excerpt */
+            excerpt: string;
+            /** Href */
+            href?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "case" | "policy";
+            /** Label */
+            label: string;
+            /** Source Id */
+            source_id: string;
+        };
         /** AuditEventOut */
         AuditEventOut: {
             /** Created At */
@@ -304,7 +493,7 @@ export interface components {
             /** Event Type */
             event_type: string;
             /** Exception Id */
-            exception_id: number | null;
+            exception_id: number | string | null;
             /** Hash */
             hash: string;
             /** Id */
@@ -363,6 +552,107 @@ export interface components {
             target_schedule_id?: number | null;
             ts_window?: components["schemas"]["TimeWindow"] | null;
         };
+        /** ConversationDeleteOut */
+        ConversationDeleteOut: {
+            /** Deleted */
+            deleted: boolean;
+        };
+        /**
+         * ConversationDetailOut
+         * @description Conversation metadata and chronological messages for reopening a chat.
+         */
+        ConversationDetailOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Messages */
+            messages: components["schemas"]["ConversationMessageOut"][];
+            /** Title */
+            title: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ConversationMessageOut
+         * @description One persisted user or assistant message with its retained citations.
+         */
+        ConversationMessageOut: {
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Model */
+            model: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Source References */
+            source_references: components["schemas"]["AssistantSource"][];
+        };
+        /**
+         * ConversationSummaryOut
+         * @description One private conversation in a user's organization-scoped chat history.
+         */
+        ConversationSummaryOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Message Preview */
+            last_message_preview: string | null;
+            /** Title */
+            title: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CurrentUserOut
+         * @description Authenticated principal resolved from Supabase Auth and user_profiles.
+         */
+        CurrentUserOut: {
+            /** Email */
+            email?: string | null;
+            /** Manager Ref */
+            manager_ref?: string | null;
+            /** Organization Id */
+            organization_id: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "HR" | "manager" | "integration_service";
+            /** User Id */
+            user_id: string;
+        };
         /**
          * DecisionAction
          * @enum {string}
@@ -381,17 +671,25 @@ export interface components {
             /** Decided At */
             decided_at: string;
             /** Exception Id */
-            exception_id: number;
+            exception_id: number | string;
+            /** External Operation Id */
+            external_operation_id?: string | null;
             final_correction: components["schemas"]["ProposedCorrection"] | null;
             /** Id */
-            id: number;
+            id: number | string;
             /** Manager Id */
             manager_id: string;
             /** Note */
             note: string | null;
             /** Proposal Id */
-            proposal_id: number | null;
+            proposal_id: number | string | null;
             resulting_status: components["schemas"]["ExceptionStatus"];
+            /**
+             * Writeback Status
+             * @default not_requested
+             * @enum {string}
+             */
+            writeback_status: "not_requested" | "pending" | "applied" | "stale" | "failed";
         };
         /** DetectIn */
         DetectIn: {
@@ -415,21 +713,18 @@ export interface components {
         EmployeeOut: {
             /** Id */
             id: string;
-            /**
-             * Jurisdiction
-             * @enum {string}
-             */
-            jurisdiction: "US-STD" | "US-CA";
+            /** Jurisdiction */
+            jurisdiction: string;
             /** Manager Id */
-            manager_id: string;
+            manager_id?: string | null;
             /** Name */
             name: string;
             /** Ot Eligible */
-            ot_eligible: boolean;
+            ot_eligible?: boolean | null;
             /** Role */
-            role: string;
+            role?: string | null;
             /** Site */
-            site: string;
+            site?: string | null;
         };
         /** ErrorOut */
         ErrorOut: {
@@ -442,12 +737,21 @@ export interface components {
         };
         /** ExceptionDetail */
         ExceptionDetail: {
+            /** Current Source Version */
+            current_source_version?: string | null;
             decision: components["schemas"]["DecisionOut"] | null;
             employee: components["schemas"]["EmployeeOut"];
             exception: components["schemas"]["ExceptionOut"];
             latest_proposal: components["schemas"]["ProposalOut"] | null;
             /** Policies */
             policies: components["schemas"]["PolicyPassage"][];
+            /**
+             * Source Current
+             * @default true
+             */
+            source_current: boolean;
+            /** Source Version */
+            source_version?: string | null;
             timecard: components["schemas"]["TimecardOut"];
         };
         /** ExceptionOut */
@@ -464,7 +768,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Id */
-            id: number;
+            id: number | string;
             /** Rule Id */
             rule_id: string;
             severity: components["schemas"]["Severity"];
@@ -478,7 +782,7 @@ export interface components {
          * ExceptionStatus
          * @enum {string}
          */
-        ExceptionStatus: "OPEN" | "PENDING_REVIEW" | "ESCALATED" | "RESOLVED" | "REJECTED" | "SUPERSEDED";
+        ExceptionStatus: "OPEN" | "PENDING_REVIEW" | "ESCALATED" | "RESOLVED" | "REJECTED" | "SUPERSEDED" | "WRITEBACK_PENDING" | "WRITEBACK_FAILED";
         /**
          * FaultMode
          * @enum {string}
@@ -509,6 +813,18 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /** IntegrationEventAck */
+        IntegrationEventAck: {
+            /** Duplicate */
+            duplicate: boolean;
+            /** Event Id */
+            event_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "accepted";
         };
         /** LLMModeIn */
         LLMModeIn: {
@@ -592,9 +908,9 @@ export interface components {
             /** Created At */
             created_at: string;
             /** Exception Id */
-            exception_id: number;
+            exception_id: number | string;
             /** Id */
-            id: number;
+            id: number | string;
             /** Latency Ms */
             latency_ms: number;
             /** Model */
@@ -638,11 +954,8 @@ export interface components {
             /** Id */
             id: number;
             kind: components["schemas"]["PunchKind"];
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "device" | "manual" | "correction";
+            /** Source */
+            source: string | null;
             /** Ts */
             ts: string;
             /**
@@ -652,6 +965,28 @@ export interface components {
             voided: boolean;
             /** Work Date */
             work_date: string;
+        };
+        /**
+         * ReadinessOut
+         * @description Operational dependency checks for deployment readiness probes.
+         */
+        ReadinessOut: {
+            /** Checks */
+            checks: {
+                [key: string]: boolean;
+            };
+            /**
+             * Now
+             * Format: date-time
+             */
+            now: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "not_ready";
+            /** Worker Heartbeat Age Seconds */
+            worker_heartbeat_age_seconds?: number | null;
         };
         /** ScheduleOut */
         ScheduleOut: {
@@ -672,7 +1007,7 @@ export interface components {
          * Severity
          * @enum {string}
          */
-        Severity: "low" | "medium" | "high";
+        Severity: "low" | "medium" | "high" | "critical";
         /** SideEffect */
         SideEffect: {
             /** Rule Id */
@@ -700,7 +1035,7 @@ export interface components {
             /** Week Start */
             week_start: string;
             /** Weekly Threshold Minutes */
-            weekly_threshold_minutes: number;
+            weekly_threshold_minutes: number | null;
             /** Weekly Worked Minutes */
             weekly_worked_minutes: number;
         };
@@ -738,9 +1073,7 @@ export interface operations {
     get_llm_mode_api_v1_admin_llm_mode_get: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -755,23 +1088,12 @@ export interface operations {
                     "application/json": components["schemas"]["LLMModeOut"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
         };
     };
     set_llm_mode_api_v1_admin_llm_mode_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -804,9 +1126,7 @@ export interface operations {
     reset_demo_api_v1_admin_reset_demo_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -821,6 +1141,66 @@ export interface operations {
                     "application/json": components["schemas"]["DetectOut"];
                 };
             };
+        };
+    };
+    list_assistant_conversations_api_v1_assistant_conversations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationSummaryOut"][];
+                };
+            };
+        };
+    };
+    assistant_conversation_detail_api_v1_assistant_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDetailOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -828,6 +1208,115 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_assistant_conversation_api_v1_assistant_conversations__conversation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDeleteOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assistant_query_api_v1_assistant_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssistantQuestion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssistantAnswer"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };
@@ -852,12 +1341,77 @@ export interface operations {
             };
         };
     };
+    retry_decision_writeback_api_v1_decisions__decision_id__retry_writeback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                decision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     detect_api_v1_detect_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -892,9 +1446,7 @@ export interface operations {
             query?: {
                 week_start?: string | null;
             };
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
                 employee_id: string;
             };
@@ -950,9 +1502,7 @@ export interface operations {
                 limit?: number;
                 offset?: number;
             };
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -990,11 +1540,9 @@ export interface operations {
     exception_detail_api_v1_exceptions__exception_id__get: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
-                exception_id: number;
+                exception_id: string;
             };
             cookie?: never;
         };
@@ -1041,11 +1589,9 @@ export interface operations {
     exception_audit_api_v1_exceptions__exception_id__audit_get: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
-                exception_id: number;
+                exception_id: string;
             };
             cookie?: never;
         };
@@ -1092,11 +1638,9 @@ export interface operations {
     create_decision_api_v1_exceptions__exception_id__decision_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
-                exception_id: number;
+                exception_id: string;
             };
             cookie?: never;
         };
@@ -1151,8 +1695,17 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1165,11 +1718,9 @@ export interface operations {
     create_proposal_api_v1_exceptions__exception_id__propose_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Manager-Id"?: string | null;
-            };
+            header?: never;
             path: {
-                exception_id: number;
+                exception_id: string;
             };
             cookie?: never;
         };
@@ -1238,6 +1789,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    readiness_api_v1_health_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessOut"];
+                };
+            };
+        };
+    };
+    current_user_api_v1_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUserOut"];
                 };
             };
         };
@@ -1319,6 +1910,113 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    receive_attendance_event_integrations_v1_events_attendance_changed_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-company-event-id"?: string | null;
+                "x-company-timestamp"?: string | null;
+                "x-company-signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Event Id */
+                    event_id: string;
+                    /**
+                     * Event Type
+                     * @enum {string}
+                     */
+                    event_type: "attendance.record.changed" | "attendance.record.deleted";
+                    /**
+                     * Occurred At
+                     * Format: date-time
+                     */
+                    occurred_at: string;
+                    /**
+                     * AttendanceSourceReference
+                     * @description Opaque company record identifiers and source version from a webhook.
+                     */
+                    record: {
+                        /** Employee Ref */
+                        employee_ref: string;
+                        /** Record Ref */
+                        record_ref: string;
+                        /**
+                         * Record Type
+                         * @constant
+                         */
+                        record_type: "timecard_day";
+                        /**
+                         * Updated At
+                         * Format: date-time
+                         */
+                        updated_at: string;
+                        /** Version */
+                        version: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationEventAck"];
+                };
+            };
+            /** @description Missing, expired, or invalid webhook signature */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Event ID was reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Webhook body exceeds the configured limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Webhook rate limit exceeded; retry after the indicated delay */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Integration intake is not configured or temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

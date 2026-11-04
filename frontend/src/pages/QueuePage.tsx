@@ -3,6 +3,7 @@ import { useExceptions } from "../api/hooks";
 import type { ExceptionStatus } from "../api/schemas";
 import { ErrorBanner, LoadingState, PageHeading } from "../components/common";
 import { ExceptionTable } from "../components/ExceptionTable";
+import { useAuth } from "../auth/AuthContext";
 
 const STATUSES: { value: ExceptionStatus; label: string }[] = [
   { value: "OPEN", label: "Open" },
@@ -11,6 +12,8 @@ const STATUSES: { value: ExceptionStatus; label: string }[] = [
   { value: "RESOLVED", label: "Resolved" },
   { value: "REJECTED", label: "Rejected" },
   { value: "SUPERSEDED", label: "Superseded" },
+  { value: "WRITEBACK_PENDING", label: "Writeback pending" },
+  { value: "WRITEBACK_FAILED", label: "Writeback failed" },
 ];
 
 const RULES = [
@@ -19,8 +22,9 @@ const RULES = [
 ];
 
 export function QueuePage() {
+  const auth = useAuth();
   const [status, setStatus] = useState<ExceptionStatus | "active" | "all">("active");
-  const [severity, setSeverity] = useState<"" | "low" | "medium" | "high">("");
+  const [severity, setSeverity] = useState<"" | "low" | "medium" | "high" | "critical">("");
   const [rule, setRule] = useState("");
   const query = useExceptions({ status, severity: severity || undefined, rule_id: rule || undefined });
   const allCases = useExceptions({ status: "all" });
@@ -32,7 +36,7 @@ export function QueuePage() {
 
   return (
     <main className="page-shell">
-      <PageHeading eyebrow="Manager queue" title="Timecard exceptions">
+      <PageHeading eyebrow={auth.enabled ? "HR review queue" : "Manager queue"} title="Timecard exceptions">
         <span className="queue-date">Pay week · Mar 10–16, 2025</span>
       </PageHeading>
 
@@ -41,6 +45,8 @@ export function QueuePage() {
           ["OPEN", "Open"],
           ["PENDING_REVIEW", "Pending review"],
           ["ESCALATED", "Escalated"],
+          ["WRITEBACK_PENDING", "Writeback pending"],
+          ["WRITEBACK_FAILED", "Writeback failed"],
           ["RESOLVED", "Resolved"],
         ].map(([key, label]) => (
           <div className="summary-item" key={key}>
@@ -70,6 +76,7 @@ export function QueuePage() {
               <select aria-label="Filter by severity" value={severity} onChange={(event) => setSeverity(event.target.value as typeof severity)}>
                 <option value="">All levels</option>
                 <option value="high">High</option>
+                <option value="critical">Critical</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>

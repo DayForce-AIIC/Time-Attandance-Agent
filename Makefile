@@ -3,8 +3,9 @@ VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 ACTIVE_PYTHON := $(if $(wildcard $(VENV_PYTHON)),$(VENV_PYTHON),$(PYTHON))
 PYTHON_BIN := $(abspath $(shell command -v $(ACTIVE_PYTHON)))
+BACKEND_COVERAGE := --cov=app.engine --cov=app.validator --cov=app.pipeline --cov=app.decisions --cov=app.audit --cov=app.detection --cov=app.repo --cov=app.seed
 
-.PHONY: all setup seed backend frontend eval backend-ci eval-ci frontend-ci openapi test
+.PHONY: all setup seed backend frontend worker eval backend-ci eval-ci frontend-ci openapi test supabase-db-push
 
 all: backend-ci eval-ci frontend-ci
 
@@ -23,6 +24,9 @@ backend:
 frontend:
 	cd frontend && npm run dev
 
+worker:
+	cd backend && PYTHONPATH=. $(PYTHON_BIN) scripts/analysis_worker.py
+
 eval:
 	LLM_PROVIDER=mock $(PYTHON_BIN) eval/run_eval.py
 
@@ -30,7 +34,7 @@ backend-ci:
 	$(PYTHON_BIN) -m ruff check backend
 	$(PYTHON_BIN) -m ruff format --check backend
 	$(PYTHON_BIN) -m mypy backend/app
-	cd backend && PYTHONPATH=. $(PYTHON_BIN) -m pytest --cov=app --cov-fail-under=85
+	cd backend && PYTHONPATH=. $(PYTHON_BIN) -m pytest $(BACKEND_COVERAGE) --cov-fail-under=85
 	cd backend && PYTHONPATH=. $(PYTHON_BIN) scripts/export_openapi.py
 	git diff --exit-code -- docs/openapi.json
 
@@ -51,6 +55,9 @@ openapi:
 	cd backend && PYTHONPATH=. $(PYTHON_BIN) scripts/export_openapi.py
 	cd frontend && npm run gen:api
 
+supabase-db-push:
+	supabase db push --remote
+
 test:
-	cd backend && PYTHONPATH=. $(PYTHON_BIN) -m pytest --cov=app --cov-report=term-missing --cov-fail-under=85
+	cd backend && PYTHONPATH=. $(PYTHON_BIN) -m pytest $(BACKEND_COVERAGE) --cov-report=term-missing --cov-fail-under=85
 	cd frontend && npm test

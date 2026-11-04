@@ -6,6 +6,8 @@ PROJECT_SPEC.md
 .env
 .env.*
 !.env.example
+!frontend/.env.example
+!.env.test
 
 # Python
 __pycache__/
@@ -35,3 +37,6 @@ npm-debug.log*
 
 # OS-generated files
 .DS_Store
+docs/IMPLEMENTATION_PLAN.md
+supabase/.temp/
+supabase/.branches/
