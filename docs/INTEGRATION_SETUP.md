@@ -28,12 +28,14 @@ Step 3 provides a vendor-neutral adapter plus a synthetic provider. The actual c
 
    Generate a local secret with `openssl rand -hex 32`. Keep the database URL, webhook secret, and company API token off the frontend and out of source control.
 
-4. Start FastAPI, then send one synthetic signed event and fetch its source record:
+4. Start FastAPI and the analysis worker, then send the synthetic event set for every built-in detector rule:
 
    ```bash
    cd backend
    PYTHONPATH=. python scripts/send_synthetic_company_event.py
    ```
+
+   The default command queues 15 signed events using the synthetic provider's fixture records. Keep the built-in rules enabled to create cases for all 15. You can limit the batch with repeated `--scenario RULE-ID` options, such as `--scenario PUNCH-01 --scenario OT-02`. Use `--single` to send one event for a selected source record. The script queues events; the worker processes them asynchronously.
 
 5. Recover missed webhook events from the configured cursor feed:
 
@@ -41,7 +43,7 @@ Step 3 provides a vendor-neutral adapter plus a synthetic provider. The actual c
    PYTHONPATH=. python scripts/sync_company_attendance.py
    ```
 
-The sender posts to `http://127.0.0.1:8000` by default. Pass `--url` to target another development server. The script's event ID is unique by default; reusing the same ID and same payload is acknowledged as a duplicate, while a changed payload conflicts.
+The sender posts to `http://127.0.0.1:8000` by default. Pass `--url` to target another development server. Each event ID is unique by default; reusing an ID with the same payload is acknowledged as a duplicate, while a changed payload conflicts. The all-rules batch is available only with `ATTENDANCE_PROVIDER=mock`.
 
 The webhook atomically stores the event envelope and enqueues a `detect` job. It returns without calling the LLM. It does not store punches, schedules, leave details, employee names, or a full timecard. Cursor sync persists events and their jobs before advancing its checkpoint; re-reading a page is safe. The mock provider includes `tcday_2026-11-03_8F39A` at version `17`. Its source records and simulated corrections live in process memory, so restarting the API resets those upstream fixtures; Supabase still retains the workflow decision and writeback result. Use the company's nonproduction API to demonstrate persistent source-system behavior.
 
