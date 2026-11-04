@@ -6,6 +6,11 @@ const timestamp = z
   .refine((value) => !Number.isNaN(Date.parse(value)), "Invalid local timestamp");
 const auditTimestamp = z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid audit timestamp");
 const workflowIdSchema = z.union([z.number().int(), z.string().uuid()]);
+// The model's correlation value is not a workflow identifier and is never used
+// for navigation or mutations. Historic durable proposals can contain an
+// integer generated before the backend constrained it to JavaScript's safe
+// range, so retain integer validation without rejecting their evidence payload.
+const modelCorrelationIdSchema = z.number().finite().refine(Number.isInteger, "Expected integer");
 
 export const severitySchema = z.enum(["low", "medium", "high", "critical"]);
 export const exceptionStatusSchema = z.enum([
@@ -116,7 +121,7 @@ export const proposedCorrectionSchema = z
   });
 
 export const llmProposalSchema = z.object({
-  exception_id: z.number().int(),
+  exception_id: modelCorrelationIdSchema,
   explanation: z.string().min(20).max(600),
   proposed_correction: proposedCorrectionSchema,
   policy_ids_cited: z.array(z.string()).min(1).max(5),

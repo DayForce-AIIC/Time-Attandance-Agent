@@ -34,7 +34,11 @@ class MockAttendanceProvider:
                 record_ref="tcday_2026-11-03_8F39A",
                 employee_ref="emp_8F39A",
                 version="17",
-                updated_at=normalized_now(),
+                # Keep the bundled source record stable between API and worker
+                # processes. A newly constructed mock provider must represent
+                # the same source version, rather than making existing cases
+                # appear stale solely because the process restarted.
+                updated_at=datetime.fromisoformat("2026-11-04T09:14:52Z"),
                 work_date=date(2026, 11, 3),
                 timezone="America/Chicago",
                 jurisdiction="US-STD",

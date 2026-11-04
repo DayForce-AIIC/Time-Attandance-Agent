@@ -59,6 +59,7 @@ def main() -> None:
     processed = 0
     instance_id = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex[:12]}"
     last_heartbeat = 0.0
+    idle_logged = False
     try:
         repository = PostgresWorkflowRepository.from_settings(settings)
         integration = repository.get_integration(
@@ -69,6 +70,12 @@ def main() -> None:
             raise SystemExit("The configured attendance integration is missing or inactive.")
         llm = make_llm_client(settings, lambda: FaultMode.NONE)
         worker = AttendanceAnalysisWorker(repository, provider, llm, settings, POLICY_BOOK)
+        logger = logging.getLogger(__name__)
+        log_context = {
+            "worker_instance_id": instance_id,
+            "organization_id": str(settings.auth_organization_id),
+        }
+        logger.info("analysis worker started", extra=log_context)
 
         while True:
             monotonic_now = time.monotonic()
@@ -82,15 +89,30 @@ def main() -> None:
             claimed = worker.process_one()
             if claimed:
                 processed += 1
+                idle_logged = False
                 if args.once or (args.max_jobs is not None and processed >= args.max_jobs):
                     break
                 continue
             if args.once or args.max_jobs is not None:
                 break
+            if not idle_logged:
+                logger.info(
+                    "analysis worker waiting for queued attendance events",
+                    extra=log_context,
+                )
+                idle_logged = True
             time.sleep(args.poll_seconds)
 
-        logging.getLogger(__name__).info(
+        logger.info(
             "analysis worker stopped",
+            extra={
+                "processed_jobs": processed,
+                **log_context,
+            },
+        )
+    except KeyboardInterrupt:
+        logging.getLogger(__name__).info(
+            "analysis worker stopped by operator",
             extra={
                 "processed_jobs": processed,
                 "worker_instance_id": instance_id,
