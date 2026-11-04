@@ -33,7 +33,8 @@ from app.integrations.schemas import (
 )
 from app.logging_setup import trace_id_var
 from app.ops_alerts import OperationalAlertReporter
-from app.policies import PolicyBook, all_passages, get_rule, retrieve_policies
+from app.organization_policies import OrganizationPolicyContext
+from app.policies import PolicyBook, get_rule
 from app.schemas import (
     Action,
     AuditEventOut,
@@ -48,6 +49,7 @@ from app.schemas import (
     ExceptionStatus,
     LLMProposal,
     PolicyPassage,
+    PolicySnapshotEntry,
     ProposalOut,
     ProposalSource,
     ProposedCorrection,
@@ -91,11 +93,13 @@ class HRReviewService:
         organization_id: UUID,
         book: PolicyBook,
         operational_alerts: OperationalAlertReporter | None = None,
+        policy_context: OrganizationPolicyContext | None = None,
     ) -> None:
         self.repository = repository
         self.provider = provider
         self.organization_id = organization_id
         self.book = book
+        self.policy_context = policy_context or OrganizationPolicyContext(book=book)
         self.operational_alerts = operational_alerts
 
     def list_cases(
@@ -546,7 +550,7 @@ class HRReviewService:
                 "the employee jurisdiction has no configured attendance policy",
                 code="unsupported_jurisdiction",
             )
-        policies = retrieve_policies(exception.rule_id, jurisdiction)
+        policies = self.policy_context.passages_for_rule(exception.rule_id, jurisdiction)
         validation_context = ValidationContext(
             employee=context.employee,
             punches=context.punches,
@@ -554,6 +558,7 @@ class HRReviewService:
             as_of=context.as_of,
             book=self.book,
             retrieved_policy_ids=[passage.policy_id for passage in policies],
+            disabled_rule_ids=self.policy_context.disabled_rule_ids,
         )
         return validate_correction(correction, exception, validation_context)
 
@@ -763,6 +768,7 @@ class HRReviewService:
                 context.schedules,
                 context.as_of,
                 self.book,
+                disabled_rule_ids=self.policy_context.disabled_rule_ids,
             )
             work_date = _case_work_date(case, self._snapshot(case))
             match = next(
@@ -787,7 +793,7 @@ class HRReviewService:
             constraints = self._constraints(case, context)
         else:
             constraints = Constraints(allowed_actions=[Action.ESCALATE])
-        rule = get_rule(str(case["rule_id"]))
+        rule = get_rule(str(case["rule_id"]), self.book)
         return ExceptionOut(
             id=UUID(str(case["id"])),
             employee_id=str(case["external_employee_ref"]),
@@ -896,6 +902,11 @@ class HRReviewService:
             model=str(row["model"]),
             latency_ms=int(row["latency_ms"]),
             created_at=_minute_timestamp(row.get("created_at")),
+            policy_snapshot=[
+                PolicySnapshotEntry.model_validate(item)
+                for item in self._as_list(row.get("policy_snapshot"))
+                if isinstance(item, dict) and {"policy_id", "title", "text"}.issubset(item)
+            ],
         )
 
     def _decision_out(self, row: Row, resulting_status: str) -> DecisionOut:
@@ -942,11 +953,24 @@ class HRReviewService:
                 snapshot = None
         return snapshot if isinstance(snapshot, dict) else {}
 
+    @staticmethod
+    def _as_list(value: object) -> list[object]:
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                value = None
+        return value if isinstance(value, list) else []
+
     def _policies(self, rule_id: str, jurisdiction: object) -> list[PolicyPassage]:
         if isinstance(jurisdiction, str) and jurisdiction in self.book.jurisdictions:
-            return retrieve_policies(rule_id, jurisdiction)
-        relevant_ids = {rule_id, *get_rule(rule_id).related[:2]}
-        return [passage for passage in all_passages() if passage.policy_id in relevant_ids]
+            return self.policy_context.passages_for_rule(rule_id, jurisdiction)
+        relevant_ids = {rule_id, *get_rule(rule_id, self.book).related[:2]}
+        return [
+            passage
+            for passage in self.policy_context.all_passages()
+            if passage.policy_id in relevant_ids
+        ]
 
 
 def _case_work_date(case: Row, snapshot: dict[str, Any]) -> date:

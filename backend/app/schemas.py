@@ -180,6 +180,59 @@ class PolicyPassage(BaseModel):
     text: str
 
 
+class PolicySnapshotEntry(PolicyPassage):
+    """One policy passage together with the persisted organization revision used."""
+
+    revision: int | None = None
+
+
+class OrganizationPolicyOut(BaseModel):
+    """One organization-owned implemented rule or AI reference policy."""
+
+    policy_id: str
+    kind: Literal["standard", "custom"]
+    rule_id: str | None = None
+    category: str
+    title: str
+    text: str
+    severity: Severity | None = None
+    applies_to_rule_ids: list[str] = Field(default_factory=list)
+    is_active: bool
+    revision: int
+    updated_at: datetime
+    archived_at: datetime | None = None
+
+
+class OrganizationPolicyCreate(BaseModel):
+    """Create a company reference policy for model retrieval."""
+
+    title: str = Field(min_length=3, max_length=160)
+    text: str = Field(min_length=20, max_length=12000)
+    applies_to_rule_ids: list[str] = Field(default_factory=list, max_length=15)
+
+    @field_validator("title", "text", mode="before")
+    @classmethod
+    def trim_policy_content(cls, value: object) -> object:
+        """Trim policy content before enforcing its minimum length."""
+        return value.strip() if isinstance(value, str) else value
+
+
+class OrganizationPolicyUpdate(BaseModel):
+    """Edit an organization policy or update an implemented rule's text."""
+
+    title: str | None = Field(default=None, min_length=3, max_length=160)
+    text: str | None = Field(default=None, min_length=20, max_length=12000)
+    severity: Severity | None = None
+    is_active: bool | None = None
+    applies_to_rule_ids: list[str] | None = Field(default=None, max_length=15)
+
+    @field_validator("title", "text", mode="before")
+    @classmethod
+    def trim_policy_content(cls, value: object) -> object:
+        """Trim optional policy content before enforcing its minimum length."""
+        return value.strip() if isinstance(value, str) else value
+
+
 class AssistantQuestion(BaseModel):
     """Bounded manager question for the read-only attendance assistant."""
 
@@ -318,6 +371,7 @@ class ProposalOut(BaseModel):
     model: str
     latency_ms: int
     created_at: str
+    policy_snapshot: list[PolicySnapshotEntry] = Field(default_factory=list)
 
 
 class DecisionIn(BaseModel):

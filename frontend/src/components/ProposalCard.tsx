@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ExceptionOut, ProposalOut } from "../api/schemas";
-import { ErrorBanner, formatDateShort, formatTime } from "./common";
+import { ErrorBanner, formatDate, formatDateShort, formatTime } from "./common";
 import { useAuth } from "../auth/AuthContext";
 
 const VALIDATOR_IDS = Array.from({ length: 10 }, (_, index) => `V-${String(index + 1).padStart(2, "0")}`);
@@ -86,6 +86,13 @@ export function ProposalCard({
         <div><p className="eyebrow">Validated suggestion</p><h2 id="proposal-heading">{auth.enabled ? "HR review" : "Manager review"}</h2></div>
         <span className="attempt-pill">{proposal.attempts === 1 ? "Passed on first attempt" : `Passed on attempt ${proposal.attempts}`}</span>
       </div>
+      <p className="proposal-case-context">
+        Employee {exception.employee_name === exception.employee_id
+          ? exception.employee_name
+          : `${exception.employee_name} (${exception.employee_id})`}
+        <span aria-hidden="true"> · </span>{formatDate(exception.work_date)}
+        <span aria-hidden="true"> · </span>{exception.title}
+      </p>
       <p className="proposal-explanation">{proposal.proposal.explanation}</p>
 
       <div className="correction-diff" aria-label="Proposed timecard change">

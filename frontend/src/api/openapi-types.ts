@@ -372,6 +372,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organization/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List organization policies and implemented rules
+         * @description Return the signed-in HR user's editable, tenant-scoped policy catalog.
+         */
+        get: operations["list_organization_policies_api_v1_organization_policies_get"];
+        put?: never;
+        /**
+         * Add company-specific attendance guidance
+         * @description Add a company reference policy used in analysis and Ask ShiftGuard context.
+         */
+        post: operations["create_organization_policy_api_v1_organization_policies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organization/policies/{policy_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Archive company attendance guidance
+         * @description Archive custom guidance while preserving its immutable history.
+         */
+        delete: operations["archive_organization_policy_api_v1_organization_policies__policy_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit an organization policy or implemented rule
+         * @description Edit policy wording, enablement, severity, or custom rule applicability.
+         */
+        patch: operations["update_organization_policy_api_v1_organization_policies__policy_id__patch"];
+        trace?: never;
+    };
     "/api/v1/policies": {
         parameters: {
             query?: never;
@@ -892,10 +940,86 @@ export interface components {
             /** Unsafe Proposals Reaching Manager */
             unsafe_proposals_reaching_manager: number;
         };
+        /**
+         * OrganizationPolicyCreate
+         * @description Create a company reference policy for model retrieval.
+         */
+        OrganizationPolicyCreate: {
+            /** Applies To Rule Ids */
+            applies_to_rule_ids?: string[];
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * OrganizationPolicyOut
+         * @description One organization-owned implemented rule or AI reference policy.
+         */
+        OrganizationPolicyOut: {
+            /** Applies To Rule Ids */
+            applies_to_rule_ids?: string[];
+            /** Archived At */
+            archived_at?: string | null;
+            /** Category */
+            category: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "custom";
+            /** Policy Id */
+            policy_id: string;
+            /** Revision */
+            revision: number;
+            /** Rule Id */
+            rule_id?: string | null;
+            severity?: components["schemas"]["Severity"] | null;
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * OrganizationPolicyUpdate
+         * @description Edit an organization policy or update an implemented rule's text.
+         */
+        OrganizationPolicyUpdate: {
+            /** Applies To Rule Ids */
+            applies_to_rule_ids?: string[] | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            severity?: components["schemas"]["Severity"] | null;
+            /** Text */
+            text?: string | null;
+            /** Title */
+            title?: string | null;
+        };
         /** PolicyPassage */
         PolicyPassage: {
             /** Policy Id */
             policy_id: string;
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * PolicySnapshotEntry
+         * @description One policy passage together with the persisted organization revision used.
+         */
+        PolicySnapshotEntry: {
+            /** Policy Id */
+            policy_id: string;
+            /** Revision */
+            revision?: number | null;
             /** Text */
             text: string;
             /** Title */
@@ -915,6 +1039,8 @@ export interface components {
             latency_ms: number;
             /** Model */
             model: string;
+            /** Policy Snapshot */
+            policy_snapshot?: components["schemas"]["PolicySnapshotEntry"][];
             proposal: components["schemas"]["LLMProposal"];
             source: components["schemas"]["ProposalSource"];
             /** Trace Id */
@@ -1695,7 +1821,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1849,6 +1975,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MetricsOut"];
+                };
+            };
+        };
+    };
+    list_organization_policies_api_v1_organization_policies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPolicyOut"][];
+                };
+            };
+        };
+    };
+    create_organization_policy_api_v1_organization_policies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationPolicyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPolicyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_organization_policy_api_v1_organization_policies__policy_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                policy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPolicyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_organization_policy_api_v1_organization_policies__policy_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                policy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationPolicyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPolicyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -1307,6 +1307,200 @@
         "title": "MetricsOut",
         "type": "object"
       },
+      "OrganizationPolicyCreate": {
+        "description": "Create a company reference policy for model retrieval.",
+        "properties": {
+          "applies_to_rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 15,
+            "title": "Applies To Rule Ids",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 12000,
+            "minLength": 20,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 160,
+            "minLength": 3,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ],
+        "title": "OrganizationPolicyCreate",
+        "type": "object"
+      },
+      "OrganizationPolicyOut": {
+        "description": "One organization-owned implemented rule or AI reference policy.",
+        "properties": {
+          "applies_to_rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Applies To Rule Ids",
+            "type": "array"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "custom"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "policy_id": {
+            "title": "Policy Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Id"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Severity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy_id",
+          "kind",
+          "category",
+          "title",
+          "text",
+          "is_active",
+          "revision",
+          "updated_at"
+        ],
+        "title": "OrganizationPolicyOut",
+        "type": "object"
+      },
+      "OrganizationPolicyUpdate": {
+        "description": "Edit an organization policy or update an implemented rule's text.",
+        "properties": {
+          "applies_to_rule_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 15,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applies To Rule Ids"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Severity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 12000,
+                "minLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "OrganizationPolicyUpdate",
+        "type": "object"
+      },
       "PolicyPassage": {
         "properties": {
           "policy_id": {
@@ -1328,6 +1522,41 @@
           "text"
         ],
         "title": "PolicyPassage",
+        "type": "object"
+      },
+      "PolicySnapshotEntry": {
+        "description": "One policy passage together with the persisted organization revision used.",
+        "properties": {
+          "policy_id": {
+            "title": "Policy Id",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy_id",
+          "title",
+          "text"
+        ],
+        "title": "PolicySnapshotEntry",
         "type": "object"
       },
       "ProposalOut": {
@@ -1371,6 +1600,13 @@
           "model": {
             "title": "Model",
             "type": "string"
+          },
+          "policy_snapshot": {
+            "items": {
+              "$ref": "#/components/schemas/PolicySnapshotEntry"
+            },
+            "title": "Policy Snapshot",
+            "type": "array"
           },
           "proposal": {
             "$ref": "#/components/schemas/LLMProposal"
@@ -2764,7 +3000,7 @@
                 }
               }
             },
-            "description": "Unprocessable Entity"
+            "description": "Unprocessable Content"
           },
           "429": {
             "content": {
@@ -2961,6 +3197,186 @@
         "summary": "Get workflow and safety metrics",
         "tags": [
           "metrics"
+        ]
+      }
+    },
+    "/api/v1/organization/policies": {
+      "get": {
+        "description": "Return the signed-in HR user's editable, tenant-scoped policy catalog.",
+        "operationId": "list_organization_policies_api_v1_organization_policies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationPolicyOut"
+                  },
+                  "title": "Response List Organization Policies Api V1 Organization Policies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List organization policies and implemented rules",
+        "tags": [
+          "policies"
+        ]
+      },
+      "post": {
+        "description": "Add a company reference policy used in analysis and Ask ShiftGuard context.",
+        "operationId": "create_organization_policy_api_v1_organization_policies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationPolicyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationPolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add company-specific attendance guidance",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/organization/policies/{policy_id}": {
+      "delete": {
+        "description": "Archive custom guidance while preserving its immutable history.",
+        "operationId": "archive_organization_policy_api_v1_organization_policies__policy_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationPolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive company attendance guidance",
+        "tags": [
+          "policies"
+        ]
+      },
+      "patch": {
+        "description": "Edit policy wording, enablement, severity, or custom rule applicability.",
+        "operationId": "update_organization_policy_api_v1_organization_policies__policy_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationPolicyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationPolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit an organization policy or implemented rule",
+        "tags": [
+          "policies"
         ]
       }
     },

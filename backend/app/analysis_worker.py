@@ -25,7 +25,11 @@ from app.integrations.schemas import AttendanceRecord
 from app.llm.base import LLMClient, LLMTimeout, LLMUnavailable
 from app.llm.prompt import build_prompt
 from app.ops_alerts import OperationalAlertReporter
-from app.policies import POLICY_BOOK, PolicyBook, retrieve_policies
+from app.organization_policies import (
+    OrganizationPolicyContext,
+    resolve_organization_policy_context,
+)
+from app.policies import POLICY_BOOK, PolicyBook
 from app.schemas import (
     Action,
     CheckResult,
@@ -40,7 +44,7 @@ from app.workflow_repository import PostgresWorkflowRepository, Row
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "attendance-proposal-v1"
+PROMPT_VERSION = "attendance-proposal-v3"
 VALIDATOR_VERSION = "shiftguard-validator-v1"
 MAX_RETRY_DELAY_SECONDS = 3600
 FINAL_CASE_STATUSES = {
@@ -89,6 +93,8 @@ class AttendanceAnalysisWorker:
         self.llm = llm
         self.settings = settings
         self.book = book
+        self.base_book = book
+        self.policy_context = OrganizationPolicyContext(book=book)
         self.operational_alerts = operational_alerts or OperationalAlertReporter(settings)
 
     def process_one(self) -> bool:
@@ -122,6 +128,10 @@ class AttendanceAnalysisWorker:
             return True
 
         try:
+            self.policy_context = resolve_organization_policy_context(
+                self.repository, organization_id, self.base_book
+            )
+            self.book = self.policy_context.book
             self._process_event(job, event)
             self.operational_alerts.report_success("analysis_worker")
             logger.info(
@@ -278,7 +288,14 @@ class AttendanceAnalysisWorker:
 
         as_of = _analysis_time(source_record.work_date, zone)
         try:
-            findings = detect_employee(employee, punches, schedules, as_of, self.book)
+            findings = detect_employee(
+                employee,
+                punches,
+                schedules,
+                as_of,
+                self.book,
+                disabled_rule_ids=self.policy_context.disabled_rule_ids,
+            )
         except (ValueError, KeyError) as exc:
             raise PermanentAnalysisError("deterministic_detection_failed") from exc
 
@@ -448,7 +465,9 @@ class AttendanceAnalysisWorker:
             evidence=finding.evidence,
             constraints=finding.constraints,
         )
-        policies = retrieve_policies(finding.rule_id, str(employee["jurisdiction"]))
+        policies = self.policy_context.passages_for_rule(
+            finding.rule_id, str(employee["jurisdiction"])
+        )
         policy_ids = [passage.policy_id for passage in policies]
         day_punches = [punch for punch in punches if punch.work_date == finding.work_date]
         target_schedule = (
@@ -466,6 +485,7 @@ class AttendanceAnalysisWorker:
             as_of=as_of,
             book=self.book,
             retrieved_policy_ids=policy_ids,
+            disabled_rule_ids=self.policy_context.disabled_rule_ids,
         )
         last_feedback: str | list[CheckResult] | None = None
         total_latency_ms = 0
@@ -639,6 +659,9 @@ class AttendanceAnalysisWorker:
             expected_source_hash=source_hash,
             proposal=chosen.model_dump(mode="json"),
             policy_ids=chosen.policy_ids_cited,
+            policy_snapshot=self.policy_context.snapshot_for_rule(
+                finding.rule_id, str(employee["jurisdiction"])
+            ),
             validation_passed=validation.passed,
             validation_checks=[check.model_dump(mode="json") for check in validation.checks],
             validator_version=VALIDATOR_VERSION,

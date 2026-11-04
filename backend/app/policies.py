@@ -127,9 +127,9 @@ def global_params() -> GlobalParams:
     return POLICY_BOOK.global_params
 
 
-def get_rule(rule_id: str) -> PolicyRule:
+def get_rule(rule_id: str, book: PolicyBook = POLICY_BOOK) -> PolicyRule:
     """Return a rule by its frozen ID."""
-    for rule in POLICY_BOOK.rules:
+    for rule in book.rules:
         if rule.id == rule_id:
             return rule
     raise KeyError(f"unknown policy rule: {rule_id}")
@@ -143,17 +143,19 @@ def _passage(rule: PolicyRule, extra_text: str | None = None) -> PolicyPassage:
     )
 
 
-def all_passages() -> list[PolicyPassage]:
+def all_passages(book: PolicyBook = POLICY_BOOK) -> list[PolicyPassage]:
     """Return one plain policy passage for every frozen rule."""
-    return [_passage(rule) for rule in POLICY_BOOK.rules]
+    return [_passage(rule) for rule in book.rules]
 
 
-def retrieve_policies(rule_id: str, jurisdiction: str) -> list[PolicyPassage]:
+def retrieve_policies(
+    rule_id: str, jurisdiction: str, book: PolicyBook = POLICY_BOOK
+) -> list[PolicyPassage]:
     """Return the breached rule followed by up to two related passages."""
-    if jurisdiction not in POLICY_BOOK.jurisdictions:
+    if jurisdiction not in book.jurisdictions:
         raise KeyError(f"unknown jurisdiction: {jurisdiction}")
-    rule = get_rule(rule_id)
-    selected = [rule, *(get_rule(related_id) for related_id in rule.related[:2])]
+    rule = get_rule(rule_id, book)
+    selected = [rule, *(get_rule(related_id, book) for related_id in rule.related[:2])]
     jurisdiction_note = None
     if jurisdiction == "US-CA" and rule_id in {"OT-01", "OT-03"}:
         jurisdiction_note = "Jurisdiction US-CA applies daily overtime above 8 hours."

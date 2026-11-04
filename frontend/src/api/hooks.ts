@@ -14,7 +14,11 @@ import {
   healthSchema,
   llmModeSchema,
   metricsSchema,
+  organizationPolicyListSchema,
+  organizationPolicySchema,
   proposalOutSchema,
+  type OrganizationPolicyCreate,
+  type OrganizationPolicyUpdate,
   type ExceptionStatus,
   type FaultMode,
 } from "./schemas";
@@ -263,5 +267,59 @@ export function useVerifyAudit(enabled: boolean) {
     queryKey: ["audit-verify"],
     queryFn: () => apiFetch(`${API}/audit/verify`, {}, auditVerifySchema),
     enabled,
+  });
+}
+
+export function useOrganizationPolicies(enabled = true) {
+  return useQuery({
+    queryKey: ["organization-policies"],
+    queryFn: () => apiFetch(`${API}/organization/policies`, {}, organizationPolicyListSchema),
+    enabled,
+  });
+}
+
+function useRefreshOrganizationPolicies() {
+  const queryClient = useQueryClient();
+  return async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["organization-policies"] }),
+      queryClient.invalidateQueries({ queryKey: ["exceptions"] }),
+    ]);
+  };
+}
+
+export function useCreateOrganizationPolicy() {
+  const refresh = useRefreshOrganizationPolicies();
+  return useMutation({
+    mutationFn: (body: OrganizationPolicyCreate) => apiFetch(
+      `${API}/organization/policies`,
+      { method: "POST", body: JSON.stringify(body) },
+      organizationPolicySchema,
+    ),
+    onSuccess: refresh,
+  });
+}
+
+export function useUpdateOrganizationPolicy() {
+  const refresh = useRefreshOrganizationPolicies();
+  return useMutation({
+    mutationFn: ({ policyId, body }: { policyId: string; body: OrganizationPolicyUpdate }) => apiFetch(
+      `${API}/organization/policies/${encodeURIComponent(policyId)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+      organizationPolicySchema,
+    ),
+    onSuccess: refresh,
+  });
+}
+
+export function useArchiveOrganizationPolicy() {
+  const refresh = useRefreshOrganizationPolicies();
+  return useMutation({
+    mutationFn: (policyId: string) => apiFetch(
+      `${API}/organization/policies/${encodeURIComponent(policyId)}`,
+      { method: "DELETE" },
+      organizationPolicySchema,
+    ),
+    onSuccess: refresh,
   });
 }
