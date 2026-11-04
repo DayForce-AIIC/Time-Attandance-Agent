@@ -1,17 +1,16 @@
 """Operational metrics derived from exceptions, proposals, and decisions."""
 
-from datetime import date, datetime, timedelta
-from statistics import median
 import json
 import sqlite3
+from datetime import date, datetime, timedelta
+from statistics import median
 
 from app import repo
 from app.clock import Clock
 from app.config import Settings
 from app.policies import PolicyBook, retrieve_policies
-from app.schemas import MetricsOut
+from app.schemas import Constraints, MetricsOut, Severity
 from app.validator import ExceptionRecord, ValidationContext, validate_proposal
-from app.schemas import Constraints, Severity
 
 
 def calculate_metrics(
@@ -72,9 +71,7 @@ def calculate_metrics(
     )
 
 
-def _count_unsafe_pending(
-    conn: sqlite3.Connection, clock: Clock, book: PolicyBook
-) -> int:
+def _count_unsafe_pending(conn: sqlite3.Connection, clock: Clock, book: PolicyBook) -> int:
     unsafe = 0
     as_of = clock.now()
     for row in repo.list_pending_llm_proposals(conn):

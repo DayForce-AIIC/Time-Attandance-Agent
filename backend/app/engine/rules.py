@@ -46,7 +46,10 @@ def _minutes(delta: timedelta) -> int:
 def _window(earliest: datetime, latest: datetime) -> TimeWindow | None:
     if earliest > latest:
         return None
-    return TimeWindow(earliest=_local_ts(earliest), latest=_local_ts(latest))
+    return TimeWindow(
+        earliest=earliest.strftime("%Y-%m-%dT%H:%M"),
+        latest=latest.strftime("%Y-%m-%dT%H:%M"),
+    )
 
 
 def _constraints(
@@ -200,9 +203,7 @@ def _detect_punch_rules(
         rule = book_rules["PUNCH-04"]
         break_index = shift.punches.index(break_start)
         next_punch = (
-            shift.punches[break_index + 1]
-            if break_index + 1 < len(shift.punches)
-            else None
+            shift.punches[break_index + 1] if break_index + 1 < len(shift.punches) else None
         )
         latest_reference = shift.out_ts or as_of
         found.append(
@@ -292,11 +293,7 @@ def _detect_single_shift_rules(
 
     meal_after = jurisdiction_params.meal_after_hours * 60
     meal_required = jurisdiction_params.meal_min_minutes
-    closed_breaks = [
-        _minutes(end.ts - start.ts)
-        for start, end in shift.breaks
-        if end is not None
-    ]
+    closed_breaks = [_minutes(end.ts - start.ts) for start, end in shift.breaks if end is not None]
     if shift.gross_minutes > meal_after:
         if not closed_breaks:
             rule = book_rules["BRK-01"]
@@ -464,7 +461,14 @@ def _detect_weekly_overtime(
         return []
 
     rule = book_rules["OT-02"]
-    target = max(future_scheduled, key=lambda shift: shift.sched.start) if future_scheduled else None
+    target = (
+        max(
+            future_scheduled,
+            key=lambda shift: shift.sched.start if shift.sched is not None else datetime.min,
+        )
+        if future_scheduled
+        else None
+    )
     ts_window = None
     target_schedule_id = None
     if target is not None and target.sched is not None:
@@ -563,8 +567,7 @@ def _detect_consecutive_days(
     streak_dates = sorted(
         work_date
         for work_date, shift in shifts.items()
-        if week_start - timedelta(days=7) <= work_date <= as_of.date()
-        and shift.in_ts is not None
+        if week_start - timedelta(days=7) <= work_date <= as_of.date() and shift.in_ts is not None
     )
     required_days = max_consecutive_days + 1
     if not streak_dates:
@@ -615,9 +618,7 @@ def detect_employee(
     """Detect all policy exceptions for one employee without mutating inputs."""
     if as_of.utcoffset() is not None:
         raise ValueError("as_of must be a timezone-naive local datetime")
-    employee_id_value = _employee_value(employee, "id") or _employee_value(
-        employee, "employee_id"
-    )
+    employee_id_value = _employee_value(employee, "id") or _employee_value(employee, "employee_id")
     jurisdiction = _employee_value(employee, "jurisdiction")
     if not isinstance(employee_id_value, str) or not employee_id_value:
         raise ValueError("employee must provide a non-empty id")
@@ -675,8 +676,7 @@ def detect_employee(
             )
 
     suppress_weekly_risk = any(
-        finding.rule_id in {"MAX-01", "OT-03"}
-        and start <= finding.work_date <= as_of.date()
+        finding.rule_id in {"MAX-01", "OT-03"} and start <= finding.work_date <= as_of.date()
         for finding in detected
     )
     weekly = _detect_weekly_overtime(

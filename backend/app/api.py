@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import date, datetime, timedelta
+from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, Query, Request
@@ -15,11 +16,20 @@ from app.clock import Clock
 from app.config import Settings
 from app.db import init_db
 from app.decisions import decide
-from app.deps import current_manager, demo_manager, get_book, get_clock, get_conn, get_llm, get_settings
+from app.deps import (
+    current_manager,
+    demo_manager,
+    get_book,
+    get_clock,
+    get_conn,
+    get_llm,
+    get_settings,
+)
 from app.detection import run_detection
 from app.engine.shifts import build_shifts
 from app.errors import Forbidden, NotFound
 from app.metrics import calculate_metrics
+from app.pipeline import propose
 from app.policies import PolicyBook, all_passages, get_rule, retrieve_policies
 from app.schemas import (
     AuditEventOut,
@@ -46,14 +56,16 @@ from app.schemas import (
     TimecardOut,
 )
 from app.seed import seed
-from app.pipeline import propose
-
 
 router = APIRouter(prefix="/api/v1")
 
 
-@router.get("/health", response_model=HealthOut, summary="Check API and LLM availability", tags=["health"])
-def health(settings: Settings = Depends(get_settings), clock: Clock = Depends(get_clock)) -> HealthOut:
+@router.get(
+    "/health", response_model=HealthOut, summary="Check API and LLM availability", tags=["health"]
+)
+def health(
+    settings: Settings = Depends(get_settings), clock: Clock = Depends(get_clock)
+) -> HealthOut:
     """Report API health and whether the configured LLM provider responds."""
     reachable = True
     if settings.llm_provider == "ollama":
@@ -71,7 +83,9 @@ def health(settings: Settings = Depends(get_settings), clock: Clock = Depends(ge
     )
 
 
-@router.post("/detect", response_model=DetectOut, summary="Run exception detection", tags=["exceptions"])
+@router.post(
+    "/detect", response_model=DetectOut, summary="Run exception detection", tags=["exceptions"]
+)
 def detect(
     body: DetectIn,
     conn: sqlite3.Connection = Depends(get_conn),
@@ -135,7 +149,13 @@ def exception_detail(
     if row is None:
         raise NotFound(f"exception {exception_id} was not found")
     employee = _authorized_employee(conn, str(row["employee_id"]), manager_id)
-    timecard = _timecard(conn, employee, clock.now().date(), book, week_date=date.fromisoformat(str(row["work_date"])))
+    timecard = _timecard(
+        conn,
+        employee,
+        clock.now().date(),
+        book,
+        week_date=date.fromisoformat(str(row["work_date"])),
+    )
     proposal_row = repo.get_latest_proposal(conn, exception_id)
     decision_row = repo.get_latest_decision(conn, exception_id)
     return ExceptionDetail(
@@ -237,7 +257,12 @@ def employee_timecard(
     return _timecard(conn, employee, clock.now().date(), book, week_start=week_start)
 
 
-@router.get("/policies", response_model=list[PolicyPassage], summary="List policy passages", tags=["policies"])
+@router.get(
+    "/policies",
+    response_model=list[PolicyPassage],
+    summary="List policy passages",
+    tags=["policies"],
+)
 def list_policies() -> list[PolicyPassage]:
     """List the policy passages used by deterministic detection and proposals."""
     return all_passages()
@@ -259,13 +284,23 @@ def policy_detail(policy_id: str) -> PolicyPassage:
     return PolicyPassage(policy_id=rule.id, title=rule.title, text=rule.text)
 
 
-@router.get("/audit/verify", response_model=AuditVerifyOut, summary="Verify the audit hash chain", tags=["audit"])
+@router.get(
+    "/audit/verify",
+    response_model=AuditVerifyOut,
+    summary="Verify the audit hash chain",
+    tags=["audit"],
+)
 def audit_verify(conn: sqlite3.Connection = Depends(get_conn)) -> AuditVerifyOut:
     """Recompute and report the integrity of the complete audit chain."""
     return verify_chain(conn)
 
 
-@router.get("/metrics", response_model=MetricsOut, summary="Get workflow and safety metrics", tags=["metrics"])
+@router.get(
+    "/metrics",
+    response_model=MetricsOut,
+    summary="Get workflow and safety metrics",
+    tags=["metrics"],
+)
 def metrics(
     conn: sqlite3.Connection = Depends(get_conn),
     clock: Clock = Depends(get_clock),
@@ -433,13 +468,21 @@ def _timecard(
             for schedule in schedules
         ],
         weekly_worked_minutes=worked,
-        weekly_threshold_minutes=book.jurisdictions[str(employee["jurisdiction"])].weekly_ot_hours * 60,
+        weekly_threshold_minutes=book.jurisdictions[str(employee["jurisdiction"])].weekly_ot_hours
+        * 60,
     )
 
 
-def _punch_source(conn: sqlite3.Connection, punch_id: int) -> str:
+def _punch_source(
+    conn: sqlite3.Connection, punch_id: int
+) -> Literal["device", "manual", "correction"]:
     row = conn.execute("SELECT source FROM punches WHERE id = ?", (punch_id,)).fetchone()
-    return str(row["source"]) if row else "device"
+    source = str(row["source"]) if row else "device"
+    if source == "manual":
+        return "manual"
+    if source == "correction":
+        return "correction"
+    return "device"
 
 
 def _proposal_out(row: sqlite3.Row) -> ProposalOut:
@@ -476,7 +519,9 @@ def _decision_out(row: sqlite3.Row) -> DecisionOut:
             else None
         ),
         decided_at=str(row["decided_at"]),
-        resulting_status=ExceptionStatus.RESOLVED if row["action"] != "reject" else ExceptionStatus.REJECTED,
+        resulting_status=ExceptionStatus.RESOLVED
+        if row["action"] != "reject"
+        else ExceptionStatus.REJECTED,
     )
 
 

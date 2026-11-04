@@ -9,7 +9,6 @@ from typing import Any
 
 from app.schemas import AuditVerifyOut
 
-
 GENESIS_HASH = "GENESIS"
 
 EXCEPTION_DETECTED = "EXCEPTION_DETECTED"
@@ -56,8 +55,7 @@ def _event_hash(
     created_at: str,
 ) -> str:
     material = (
-        f"{prev_hash}|{trace_id}|{exception_id}|{seq}|{event_type}|"
-        f"{payload_json}|{created_at}"
+        f"{prev_hash}|{trace_id}|{exception_id}|{seq}|{event_type}|{payload_json}|{created_at}"
     )
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
@@ -71,8 +69,8 @@ def append_event(
 ) -> AuditEvent:
     """Append an event, linking it to the prior global event by hash."""
     payload_json = _canonical_json(payload)
-    created_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
-        "+00:00", "Z"
+    created_at = (
+        datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     )
 
     def persist() -> tuple[int, str, str, int]:
@@ -80,9 +78,7 @@ def append_event(
             "SELECT COALESCE(MAX(seq), 0) + 1 AS next_seq FROM audit_log WHERE trace_id = ?",
             (trace_id,),
         ).fetchone()
-        previous = conn.execute(
-            "SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1"
-        ).fetchone()
+        previous = conn.execute("SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1").fetchone()
         seq = int(seq_row["next_seq"])
         prev_hash = str(previous["hash"]) if previous else GENESIS_HASH
         digest = _event_hash(
@@ -104,7 +100,9 @@ def append_event(
                 created_at,
             ),
         )
-        return seq, prev_hash, digest, int(cursor.lastrowid)
+        if cursor.lastrowid is None:
+            raise RuntimeError("audit insert did not return an event ID")
+        return seq, prev_hash, digest, cursor.lastrowid
 
     if conn.in_transaction:
         seq, prev_hash, digest, event_id = persist()

@@ -2,11 +2,10 @@
 
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
 from app.config import Settings
 from app.main import create_app
 from app.schemas import FaultMode
+from fastapi.testclient import TestClient
 
 
 def test_complete_manager_review_flow_and_visibility(client):
@@ -20,7 +19,8 @@ def test_complete_manager_review_flow_and_visibility(client):
     assert len(manager_one.json()) == 9
     assert len(manager_two.json()) == 6
     case = next(
-        row for row in manager_one.json()
+        row
+        for row in manager_one.json()
         if row["employee_id"] == "e-001" and row["rule_id"] == "PUNCH-01"
     )
     exception_id = case["id"]
@@ -44,9 +44,7 @@ def test_api_not_found_forbidden_and_request_id(client):
     assert missing.status_code == 404
     assert missing.json()["code"] == "not_found"
     case = client.get("/api/v1/exceptions").json()[0]
-    forbidden = client.get(
-        f"/api/v1/exceptions/{case['id']}", headers={"X-Manager-Id": "m-002"}
-    )
+    forbidden = client.get(f"/api/v1/exceptions/{case['id']}", headers={"X-Manager-Id": "m-002"})
     assert forbidden.status_code == 403
     assert forbidden.headers.get("X-Request-ID")
     supplied = client.get("/api/v1/health", headers={"X-Request-ID": "caller-trace"})

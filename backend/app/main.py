@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import sqlite3
 import time
 import uuid
 from pathlib import Path
@@ -17,14 +16,13 @@ from app.api import router
 from app.clock import Clock
 from app.config import Settings, get_settings
 from app.db import get_conn, init_db
+from app.detection import run_detection
 from app.errors import BadRequest, Forbidden, NotFound, StateConflict, ValidationFailed
 from app.llm.factory import make_llm_client
 from app.logging_setup import configure_logging, trace_id_var
 from app.policies import load_policies
 from app.schemas import ErrorOut, FaultMode
 from app.seed import seed
-from app.detection import run_detection
-
 
 logger = logging.getLogger("shiftguard.access")
 DESCRIPTION = (
@@ -70,9 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn.close()
     application.state.book = book
     application.state.fault_mode = FaultMode.NONE
-    application.state.llm = make_llm_client(
-        runtime_settings, lambda: application.state.fault_mode
-    )
+    application.state.llm = make_llm_client(runtime_settings, lambda: application.state.fault_mode)
     application.include_router(router)
     application.add_middleware(
         CORSMiddleware,

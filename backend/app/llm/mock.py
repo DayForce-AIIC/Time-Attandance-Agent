@@ -28,7 +28,15 @@ class MockClient:
 
         rule_id = str(exception["rule_id"])
         correction = self._correction(rule_id, context, schedule, constraints)
-        cited_ids = [str(passage["policy_id"]) for passage in context["policies"]]
+        raw_policies = context.get("policies")
+        if not isinstance(raw_policies, list):
+            raise ValueError("mock provider requires a list of policy passages")
+        policy_passages = []
+        for passage in raw_policies:
+            if not isinstance(passage, dict):
+                raise ValueError("mock provider requires policy passage objects")
+            policy_passages.append(passage)
+        cited_ids = [str(passage["policy_id"]) for passage in policy_passages]
         policy_ids = [rule_id]
         policy_ids.extend(policy_id for policy_id in cited_ids if policy_id != rule_id)
         explanation = (
@@ -71,20 +79,21 @@ class MockClient:
             candidate = self._schedule_time(schedule, context, "start") or earliest
             return self._add_punch(PunchKind.IN, self._clamp(candidate, earliest, latest))
         if rule_id == "PUNCH-03":
-            punch_ids = constraints.get("target_punch_ids", [])
-            if not punch_ids:
+            punch_id = self._first_target_id(constraints.get("target_punch_ids", []))
+            if punch_id is None:
                 return ProposedCorrection(action=Action.ESCALATE)
-            return ProposedCorrection(action=Action.REMOVE_PUNCH, punch_id=int(punch_ids[0]))
+            return ProposedCorrection(action=Action.REMOVE_PUNCH, punch_id=punch_id)
         if rule_id == "PUNCH-04":
-            evidence = context["exception"].get("evidence", {})
+            exception_context = context.get("exception")
+            evidence = (
+                exception_context.get("evidence", {}) if isinstance(exception_context, dict) else {}
+            )
             break_start = evidence.get("break_start_ts") if isinstance(evidence, dict) else None
             candidate = self._add_minutes(str(break_start), 30) if break_start else earliest
-            return self._add_punch(
-                PunchKind.BREAK_END, self._clamp(candidate, earliest, latest)
-            )
+            return self._add_punch(PunchKind.BREAK_END, self._clamp(candidate, earliest, latest))
         if rule_id == "MAX-01":
-            punch_ids = constraints.get("target_punch_ids", [])
-            if not punch_ids:
+            punch_id = self._first_target_id(constraints.get("target_punch_ids", []))
+            if punch_id is None:
                 return ProposedCorrection(action=Action.ESCALATE)
             candidate = self._schedule_time(schedule, context, "end") or earliest
             timestamp = self._clamp(candidate, earliest, latest)
@@ -92,12 +101,12 @@ class MockClient:
                 return ProposedCorrection(action=Action.ESCALATE)
             return ProposedCorrection(
                 action=Action.MODIFY_PUNCH,
-                punch_id=int(punch_ids[0]),
+                punch_id=punch_id,
                 ts=timestamp,
             )
         if rule_id == "OT-02":
             schedule_id = constraints.get("target_schedule_id")
-            if schedule_id is None:
+            if isinstance(schedule_id, bool) or not isinstance(schedule_id, int):
                 return ProposedCorrection(action=Action.FLAG_FOR_APPROVAL)
             candidate = self._overtime_schedule_end(schedule, constraints) or earliest
             timestamp = self._clamp(candidate, earliest, latest)
@@ -105,12 +114,20 @@ class MockClient:
                 return ProposedCorrection(action=Action.FLAG_FOR_APPROVAL)
             return ProposedCorrection(
                 action=Action.ADJUST_SCHEDULE,
-                schedule_id=int(schedule_id),
+                schedule_id=schedule_id,
                 ts=timestamp,
             )
         if rule_id == "PUNCH-99":
             return ProposedCorrection(action=Action.ESCALATE)
         return ProposedCorrection(action=Action.FLAG_FOR_APPROVAL)
+
+    @staticmethod
+    def _first_target_id(values: object) -> int | None:
+        """Return the first integer target identifier from a JSON-shaped list."""
+        if not isinstance(values, list) or not values:
+            return None
+        value = values[0]
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
 
     @staticmethod
     def _add_punch(kind: PunchKind, timestamp: str | None) -> ProposedCorrection:
@@ -140,9 +157,7 @@ class MockClient:
         return value.strftime("%Y-%m-%dT%H:%M")
 
     @staticmethod
-    def _clamp(
-        candidate: str | None, earliest: str | None, latest: str | None
-    ) -> str | None:
+    def _clamp(candidate: str | None, earliest: str | None, latest: str | None) -> str | None:
         if earliest is None or latest is None:
             return candidate
         if candidate is None:
@@ -156,7 +171,12 @@ class MockClient:
         if schedule is None or schedule.get("start") is None:
             return None
         headroom = constraints.get("headroom_minutes")
-        if headroom is None:
+        if isinstance(headroom, bool) or not isinstance(headroom, (int, float)):
             return None
-        planned_break = int(schedule.get("planned_break_minutes", 0))
+        planned_break_value = schedule.get("planned_break_minutes", 0)
+        if isinstance(planned_break_value, bool) or not isinstance(
+            planned_break_value, (int, float)
+        ):
+            return None
+        planned_break = int(planned_break_value)
         return MockClient._add_minutes(str(schedule["start"]), int(headroom) + planned_break)

@@ -1,5 +1,7 @@
 # ShiftGuard
 
+[![CI](https://github.com/DayForce-AIIC/Time-Attandance-Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/DayForce-AIIC/Time-Attandance-Agent/actions/workflows/ci.yml)
+
 ShiftGuard helps managers review timecard exceptions using policy-grounded suggestions, deterministic safety checks, and an explicit human decision before any correction is applied.
 
 ## The problem and workflow
@@ -54,7 +56,7 @@ From the repository root, create the Python environment and install backend depe
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r backend/requirements.txt
+pip install -r backend/requirements-dev.txt
 cp .env.example .env
 ```
 
@@ -97,6 +99,12 @@ Run backend tests from the repository root with the virtual environment active:
 
 ```bash
 make test
+```
+
+Run all backend, evaluation, and frontend CI checks locally with:
+
+```bash
+make all
 ```
 
 Run frontend checks:

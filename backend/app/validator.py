@@ -6,13 +6,13 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Sequence
+from typing import Any, Literal, Sequence
 
 from pydantic import ValidationError
 
 from app.engine.rules import DetectedException, detect_employee
-from app.engine.simulate import apply_in_memory
 from app.engine.shifts import Punch, Sched
+from app.engine.simulate import apply_in_memory
 from app.policies import PolicyBook
 from app.schemas import (
     Action,
@@ -43,7 +43,7 @@ class ExceptionRecord:
 class ValidationContext:
     """Timekeeping and policy state needed to validate a proposed change."""
 
-    employee: object
+    employee: dict[str, object]
     punches: list[Punch]
     schedules: list[Sched]
     as_of: datetime
@@ -196,7 +196,7 @@ def _normalize_exception(exc: object) -> ExceptionRecord:
         work_date = date.fromisoformat(str(raw_date))
     severity_value = _field(exc, "severity", default=Severity.MEDIUM)
     return ExceptionRecord(
-        id=int(_field(exc, "id", default=0)),
+        id=int(str(_field(exc, "id", default=0))),
         employee_id=str(_field(exc, "employee_id")),
         work_date=work_date,
         rule_id=str(_field(exc, "rule_id")),
@@ -231,7 +231,11 @@ def _field(value: object, key: str, *alternates: str, default: object = None) ->
 
 
 def _check(
-    check_id: str, name: str, passed: bool, detail: str, level: str = "error"
+    check_id: str,
+    name: str,
+    passed: bool,
+    detail: str,
+    level: Literal["error", "warning"] = "error",
 ) -> CheckResult:
     return CheckResult(id=check_id, name=name, passed=passed, level=level, detail=detail)
 
@@ -260,7 +264,9 @@ def _check_timestamp(correction: ProposedCorrection, exc: ExceptionRecord) -> Ch
         return _check("V-05", "Timestamp in window", True, "correction has no timestamp")
     window = exc.constraints.ts_window
     if window is None:
-        return _check("V-05", "Timestamp in window", False, "timestamp supplied but case has no window")
+        return _check(
+            "V-05", "Timestamp in window", False, "timestamp supplied but case has no window"
+        )
     try:
         timestamp = datetime.strptime(correction.ts, "%Y-%m-%dT%H:%M")
         earliest = datetime.strptime(window.earliest, "%Y-%m-%dT%H:%M")
@@ -319,10 +325,14 @@ def _check_simulation(
             ctx.punches, ctx.schedules, correction, detected_exception
         )
         before = detect_employee(ctx.employee, ctx.punches, ctx.schedules, ctx.as_of, ctx.book)
-        after = detect_employee(ctx.employee, updated_punches, updated_schedules, ctx.as_of, ctx.book)
+        after = detect_employee(
+            ctx.employee, updated_punches, updated_schedules, ctx.as_of, ctx.book
+        )
     except (TypeError, ValueError, KeyError, AssertionError) as error:
         return (
-            _check("V-07", "Simulation is safe", False, f"simulation could not be applied: {error}"),
+            _check(
+                "V-07", "Simulation is safe", False, f"simulation could not be applied: {error}"
+            ),
             [],
         )
 
@@ -340,7 +350,11 @@ def _check_simulation(
             failures.append("target schedule is missing from simulation context")
         else:
             minimum = ctx.book.global_params.min_adjusted_worked_hours * 60
-            planned = max(0, int((target.end - target.start).total_seconds() // 60) - target.planned_break_minutes)
+            planned = max(
+                0,
+                int((target.end - target.start).total_seconds() // 60)
+                - target.planned_break_minutes,
+            )
             if planned < minimum:
                 failures.append(
                     f"adjusted schedule leaves {planned} planned worked minutes; minimum is {minimum}"
@@ -367,14 +381,20 @@ def _check_simulation(
         return _check("V-07", "Simulation is safe", False, "; ".join(failures)), side_effects
     if side_effects:
         summary = "; ".join(f"{item.rule_id} ({item.severity.value})" for item in side_effects)
-        return _check("V-07", "Simulation is safe", True, f"no new high-severity exceptions; lower-severity side effects: {summary}"), side_effects
-    return _check("V-07", "Simulation is safe", True, "no original or new high-severity exception remains"), []
+        return _check(
+            "V-07",
+            "Simulation is safe",
+            True,
+            f"no new high-severity exceptions; lower-severity side effects: {summary}",
+        ), side_effects
+    return _check(
+        "V-07", "Simulation is safe", True, "no original or new high-severity exception remains"
+    ), []
 
 
 def _side_effect_warning(side_effects: list[SideEffect]) -> CheckResult:
     details = "; ".join(
-        f"{item.rule_id} ({item.severity.value}) on {item.work_date}"
-        for item in side_effects
+        f"{item.rule_id} ({item.severity.value}) on {item.work_date}" for item in side_effects
     )
     return _check(
         "V-07-SIDE",
@@ -389,7 +409,9 @@ def _finding_key(finding: DetectedException) -> tuple[str, date]:
     return finding.rule_id, finding.work_date
 
 
-def _check_explanation(proposal: LLMProposal, exc: ExceptionRecord, ctx: ValidationContext) -> CheckResult:
+def _check_explanation(
+    proposal: LLMProposal, exc: ExceptionRecord, ctx: ValidationContext
+) -> CheckResult:
     known_rules = {rule.id for rule in ctx.book.rules}
     citations = set(proposal.policy_ids_cited)
     tokens = set(_RULE_TOKEN.findall(proposal.explanation))
@@ -404,11 +426,17 @@ def _check_explanation(proposal: LLMProposal, exc: ExceptionRecord, ctx: Validat
         issues.append(f"uncited rule tokens: {', '.join(sorted(uncited))}")
     if has_http:
         issues.append("explanation contains a URL")
-    detail = "; ".join(issues) if issues else f"rule references are known and cited for {exc.rule_id}; no URL"
+    detail = (
+        "; ".join(issues)
+        if issues
+        else f"rule references are known and cited for {exc.rule_id}; no URL"
+    )
     return _check("V-09", "Explanation hygiene", passed, detail)
 
 
-def _check_injection(proposal: LLMProposal, exc: ExceptionRecord, ctx: ValidationContext) -> CheckResult:
+def _check_injection(
+    proposal: LLMProposal, exc: ExceptionRecord, ctx: ValidationContext
+) -> CheckResult:
     correction = proposal.proposed_correction
     controlled_text = f"{proposal.explanation} {correction.note or ''}".lower()
     echoed = [phrase for phrase in _INJECTION_PHRASES if phrase in controlled_text]

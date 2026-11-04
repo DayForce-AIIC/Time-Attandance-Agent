@@ -6,7 +6,6 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any
 
-
 trace_id_var: ContextVar[str] = ContextVar("trace_id", default="-")
 
 _STANDARD_RECORD_FIELDS = frozenset(
@@ -28,9 +27,9 @@ class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format standard fields and any extra structured fields."""
         payload: dict[str, Any] = {
-            "ts": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
-                "+00:00", "Z"
-            ),
+            "ts": datetime.now(timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z"),
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),

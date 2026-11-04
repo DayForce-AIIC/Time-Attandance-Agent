@@ -4,8 +4,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-
 from app.clock import Clock
 from app.config import Settings
 from app.db import get_conn, init_db
@@ -14,6 +12,7 @@ from app.detection import run_detection
 from app.main import create_app
 from app.policies import load_policies
 from app.seed import seed
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture

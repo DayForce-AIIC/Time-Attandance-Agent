@@ -4,7 +4,6 @@ import json
 
 import httpx
 import pytest
-
 from app.config import Settings
 from app.llm.base import LLMTimeout, LLMUnavailable, PromptBundle
 from app.llm.ollama import OllamaClient
@@ -28,7 +27,9 @@ def test_ollama_request_and_usage_metadata():
         Settings(ollama_url="http://ollama.local/", ollama_model="model-x"),
         transport=httpx.MockTransport(handler),
     )
-    bundle = PromptBundle("system", "user", {}, {"type": "object"}, 3, [{"role": "assistant", "content": "{}"}])
+    bundle = PromptBundle(
+        "system", "user", {}, {"type": "object"}, 3, [{"role": "assistant", "content": "{}"}]
+    )
     result = client.generate(bundle, 1)
     assert captured["format"] == {"type": "object"}
     assert captured["options"] == {"temperature": 0, "seed": 42, "num_ctx": 4096}

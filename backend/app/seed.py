@@ -7,7 +7,6 @@ from datetime import date, datetime, time, timedelta
 from app import repo
 from app.schemas import PunchKind
 
-
 MANAGERS = (("m-001", "Avery Singh"), ("m-002", "Jordan Blake"))
 
 EMPLOYEES = (
@@ -116,26 +115,19 @@ def _weekdays(start: date = _MONDAY, end: date = _FRIDAY) -> list[date]:
 
 def _schedule_specs() -> dict[str, dict[date, tuple[str, str]]]:
     default_days = {day: ("09:00", "17:00") for day in _weekdays()}
-    schedules = {
-        employee[0]: dict(default_days)
-        for employee in EMPLOYEES
-    }
+    schedules = {employee[0]: dict(default_days) for employee in EMPLOYEES}
     schedules["e-002"] = {
-        day: ("08:00", "16:30" if day == _FRIDAY else "17:30")
-        for day in _weekdays()
+        day: ("08:00", "16:30" if day == _FRIDAY else "17:30") for day in _weekdays()
     }
     schedules["e-003"] = {day: ("07:00", "15:00") for day in _weekdays()}
     schedules["e-004"] = {
-        day: (("07:00", "17:30") if day == _MONDAY else ("08:00", "16:30"))
-        for day in _weekdays()
+        day: (("07:00", "17:30") if day == _MONDAY else ("08:00", "16:30")) for day in _weekdays()
     }
     schedules["e-008"] = {
-        day: ("08:00", "16:30")
-        for day in (_MONDAY, date(2025, 3, 12), date(2025, 3, 13), _FRIDAY)
+        day: ("08:00", "16:30") for day in (_MONDAY, date(2025, 3, 12), date(2025, 3, 13), _FRIDAY)
     }
     schedules["e-009"] = {
-        day: ("09:00", "17:00")
-        for day in (_MONDAY, date(2025, 3, 11), date(2025, 3, 13), _FRIDAY)
+        day: ("09:00", "17:00") for day in (_MONDAY, date(2025, 3, 11), date(2025, 3, 13), _FRIDAY)
     }
     schedules["e-010"] = {
         day: ("08:00", "16:30")
@@ -156,9 +148,7 @@ def _schedule_specs() -> dict[str, dict[date, tuple[str, str]]]:
     return schedules
 
 
-def _punch_modes(schedules: dict[str, dict[date, tuple[str, str]]]) -> dict[
-    tuple[str, date], str
-]:
+def _punch_modes(schedules: dict[str, dict[date, tuple[str, str]]]) -> dict[tuple[str, date], str]:
     modes: dict[tuple[str, date], str] = {}
     for employee_id, days in schedules.items():
         last_punch_day = date(2025, 3, 13)

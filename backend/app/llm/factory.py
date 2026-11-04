@@ -10,9 +10,7 @@ from app.llm.ollama import OllamaClient
 from app.schemas import FaultMode
 
 
-def make_llm_client(
-    settings: Settings, get_mode: Callable[[], FaultMode]
-) -> LLMClient:
+def make_llm_client(settings: Settings, get_mode: Callable[[], FaultMode]) -> LLMClient:
     """Build the provider selected by settings, with fault injection enabled."""
     if settings.llm_provider == "mock":
         provider: LLMClient = MockClient()

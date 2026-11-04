@@ -71,9 +71,7 @@ def _mutate(
             correction["ts"] = _latest_plus_six_hours(bundle)
         else:
             correction.clear()
-            correction.update(
-                {"action": "ADD_PUNCH", "kind": "OUT", "ts": "2099-01-01T00:00"}
-            )
+            correction.update({"action": "ADD_PUNCH", "kind": "OUT", "ts": "2099-01-01T00:00"})
     if naive_latest:
         latest = _window_latest(bundle)
         if latest is not None and correction.get("ts") is not None:

@@ -9,8 +9,7 @@ from app import repo
 from app.clock import Clock
 from app.config import Settings
 from app.db import get_conn as open_connection
-from app.errors import Forbidden
-from app.errors import NotFound
+from app.errors import Forbidden, NotFound
 from app.llm.base import LLMClient
 from app.policies import PolicyBook
 
