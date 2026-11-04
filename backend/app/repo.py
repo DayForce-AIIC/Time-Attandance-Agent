@@ -177,6 +177,94 @@ def get_employee(conn: sqlite3.Connection, employee_id: str) -> sqlite3.Row | No
     return conn.execute("SELECT * FROM employees WHERE id = ?", (employee_id,)).fetchone()
 
 
+def get_manager(conn: sqlite3.Connection, manager_id: str) -> sqlite3.Row | None:
+    """Load a manager row by ID."""
+    return conn.execute("SELECT * FROM managers WHERE id = ?", (manager_id,)).fetchone()
+
+
+def list_exceptions_for_manager(
+    conn: sqlite3.Connection,
+    manager_id: str,
+    *,
+    status: str | None = None,
+    severity: str | None = None,
+    rule_id: str | None = None,
+    employee_id: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[sqlite3.Row]:
+    """List filtered exceptions belonging to one manager's team."""
+    clauses = ["e.manager_id = ?"]
+    params: list[object] = [manager_id]
+    for column, value in (
+        ("x.status", status),
+        ("x.severity", severity),
+        ("x.rule_id", rule_id),
+        ("x.employee_id", employee_id),
+    ):
+        if value is not None:
+            clauses.append(f"{column} = ?")
+            params.append(value)
+    params.extend([limit, offset])
+    return conn.execute(
+        f"""SELECT x.*, e.name AS employee_name
+            FROM exceptions AS x JOIN employees AS e ON e.id = x.employee_id
+            WHERE {' AND '.join(clauses)}
+            ORDER BY CASE x.severity WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END DESC,
+                     x.work_date ASC, x.id ASC
+            LIMIT ? OFFSET ?""",
+        params,
+    ).fetchall()
+
+
+def list_audit_events(
+    conn: sqlite3.Connection, exception_id: int
+) -> list[sqlite3.Row]:
+    """List audit events for one exception in insertion order."""
+    return conn.execute(
+        "SELECT * FROM audit_log WHERE exception_id = ? ORDER BY id", (exception_id,)
+    ).fetchall()
+
+
+def get_latest_decision(conn: sqlite3.Connection, exception_id: int) -> sqlite3.Row | None:
+    """Return the latest manager decision for an exception, if any."""
+    return conn.execute(
+        "SELECT * FROM decisions WHERE exception_id = ? ORDER BY id DESC LIMIT 1",
+        (exception_id,),
+    ).fetchone()
+
+
+def list_exception_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """List all exception rows for aggregate metrics."""
+    return conn.execute("SELECT * FROM exceptions ORDER BY id").fetchall()
+
+
+def list_proposal_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """List all proposals for aggregate metrics."""
+    return conn.execute("SELECT * FROM proposals ORDER BY id").fetchall()
+
+
+def list_decision_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """List all decisions with their proposal creation timestamps."""
+    return conn.execute(
+        """SELECT d.*, p.created_at AS proposal_created_at
+           FROM decisions AS d LEFT JOIN proposals AS p ON p.id = d.proposal_id
+           ORDER BY d.id"""
+    ).fetchall()
+
+
+def list_pending_llm_proposals(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Load the latest LLM proposal for each exception currently pending review."""
+    return conn.execute(
+        """SELECT p.*, x.employee_id, x.work_date, x.rule_id, x.severity,
+                  x.evidence_json, x.constraints_json
+           FROM proposals AS p JOIN exceptions AS x ON x.id = p.exception_id
+           WHERE x.status = 'PENDING_REVIEW' AND p.source = 'llm'
+             AND p.id = (SELECT MAX(p2.id) FROM proposals AS p2 WHERE p2.exception_id = x.id)
+           ORDER BY p.id"""
+    ).fetchall()
+
+
 def get_employee_note(
     conn: sqlite3.Connection, employee_id: str, work_date: date
 ) -> str | None:
@@ -216,6 +304,99 @@ def create_proposal(
             attempts,
             model,
             latency_ms,
+            created_at,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
+def get_latest_proposal(conn: sqlite3.Connection, exception_id: int) -> sqlite3.Row | None:
+    """Return the most recently stored proposal for an exception."""
+    return conn.execute(
+        "SELECT * FROM proposals WHERE exception_id = ? ORDER BY id DESC LIMIT 1",
+        (exception_id,),
+    ).fetchone()
+
+
+def get_punch(conn: sqlite3.Connection, punch_id: int) -> sqlite3.Row | None:
+    """Load a punch row by ID."""
+    return conn.execute("SELECT * FROM punches WHERE id = ?", (punch_id,)).fetchone()
+
+
+def get_schedule(conn: sqlite3.Connection, schedule_id: int) -> sqlite3.Row | None:
+    """Load a schedule row by ID."""
+    return conn.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
+
+
+def create_decision(
+    conn: sqlite3.Connection,
+    exception_id: int,
+    proposal_id: int,
+    action: str,
+    manager_id: str,
+    note: str | None,
+    final_correction_json: str | None,
+    decided_at: str,
+) -> int:
+    """Persist a manager decision and return its primary key."""
+    cursor = conn.execute(
+        """INSERT INTO decisions
+           (exception_id, proposal_id, action, manager_id, note,
+            final_correction_json, decided_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (
+            exception_id,
+            proposal_id,
+            action,
+            manager_id,
+            note,
+            final_correction_json,
+            decided_at,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
+def update_punch_ts(conn: sqlite3.Connection, punch_id: int, ts: str) -> None:
+    """Update one punch timestamp."""
+    conn.execute("UPDATE punches SET ts = ? WHERE id = ?", (ts, punch_id))
+
+
+def void_punch(conn: sqlite3.Connection, punch_id: int) -> None:
+    """Mark one punch voided without deleting its audit history."""
+    conn.execute("UPDATE punches SET voided = 1 WHERE id = ?", (punch_id,))
+
+
+def update_schedule_end(conn: sqlite3.Connection, schedule_id: int, ts: str) -> None:
+    """Update a schedule's planned end timestamp."""
+    conn.execute("UPDATE schedules SET end_ts = ? WHERE id = ?", (ts, schedule_id))
+
+
+def create_adjustment(
+    conn: sqlite3.Connection,
+    decision_id: int,
+    exception_id: int,
+    employee_id: str,
+    adjustment_type: str,
+    target_id: int | None,
+    old_value: str | None,
+    new_value: str | None,
+    created_at: str,
+) -> int:
+    """Record one applied correction or approval annotation."""
+    cursor = conn.execute(
+        """INSERT INTO adjustments
+           (decision_id, exception_id, employee_id, type, target_id,
+            old_value, new_value, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            decision_id,
+            exception_id,
+            employee_id,
+            adjustment_type,
+            target_id,
+            old_value,
+            new_value,
             created_at,
         ),
     )

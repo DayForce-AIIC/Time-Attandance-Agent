@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen2.5:7b-instruct"
     llm_timeout_seconds: float = Field(default=60.0, gt=0)
     enable_demo_controls: bool = True
+    auto_seed: bool = True
     default_manager_id: str = "m-001"
     manual_minutes_per_exception: float = Field(default=6.0, ge=0)
     review_minutes_per_exception: float = Field(default=1.0, ge=0)
