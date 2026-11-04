@@ -10,11 +10,12 @@ SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 def get_conn(path: str | Path) -> sqlite3.Connection:
     """Open a SQLite connection configured for row access and foreign keys."""
     database = str(path)
-    if database != ":memory:":
+    is_uri = database.startswith("file:")
+    if database != ":memory:" and not is_uri:
         db_path = Path(database).expanduser()
         db_path.parent.mkdir(parents=True, exist_ok=True)
         database = str(db_path)
-    conn = sqlite3.connect(database, check_same_thread=False)
+    conn = sqlite3.connect(database, check_same_thread=False, uri=is_uri)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

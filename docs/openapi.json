@@ -1,0 +1,2243 @@
+{
+  "components": {
+    "schemas": {
+      "Action": {
+        "enum": [
+          "ADD_PUNCH",
+          "MODIFY_PUNCH",
+          "REMOVE_PUNCH",
+          "ADJUST_SCHEDULE",
+          "FLAG_FOR_APPROVAL",
+          "ESCALATE"
+        ],
+        "title": "Action",
+        "type": "string"
+      },
+      "AuditEventOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "exception_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exception Id"
+          },
+          "hash": {
+            "title": "Hash",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "prev_hash": {
+            "title": "Prev Hash",
+            "type": "string"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trace_id",
+          "exception_id",
+          "seq",
+          "event_type",
+          "payload",
+          "prev_hash",
+          "hash",
+          "created_at"
+        ],
+        "title": "AuditEventOut",
+        "type": "object"
+      },
+      "AuditVerifyOut": {
+        "properties": {
+          "events_checked": {
+            "title": "Events Checked",
+            "type": "integer"
+          },
+          "first_bad_event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Bad Event Id"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "events_checked",
+          "first_bad_event_id"
+        ],
+        "title": "AuditVerifyOut",
+        "type": "object"
+      },
+      "CheckResult": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "default": "error",
+            "enum": [
+              "error",
+              "warning"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "passed"
+        ],
+        "title": "CheckResult",
+        "type": "object"
+      },
+      "Constraints": {
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "title": "Allowed Actions",
+            "type": "array"
+          },
+          "flag_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FlagType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "headroom_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headroom Minutes"
+          },
+          "target_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PunchKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_punch_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Target Punch Ids",
+            "type": "array"
+          },
+          "target_schedule_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Schedule Id"
+          },
+          "ts_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "allowed_actions"
+        ],
+        "title": "Constraints",
+        "type": "object"
+      },
+      "DecisionAction": {
+        "enum": [
+          "approve",
+          "edit",
+          "reject"
+        ],
+        "title": "DecisionAction",
+        "type": "string"
+      },
+      "DecisionIn": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "edited_correction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposedCorrection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "DecisionIn",
+        "type": "object"
+      },
+      "DecisionOut": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "decided_at": {
+            "title": "Decided At",
+            "type": "string"
+          },
+          "exception_id": {
+            "title": "Exception Id",
+            "type": "integer"
+          },
+          "final_correction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposedCorrection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "manager_id": {
+            "title": "Manager Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "proposal_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposal Id"
+          },
+          "resulting_status": {
+            "$ref": "#/components/schemas/ExceptionStatus"
+          }
+        },
+        "required": [
+          "id",
+          "exception_id",
+          "proposal_id",
+          "action",
+          "manager_id",
+          "note",
+          "final_correction",
+          "decided_at",
+          "resulting_status"
+        ],
+        "title": "DecisionOut",
+        "type": "object"
+      },
+      "DetectIn": {
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "employee_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Ids"
+          }
+        },
+        "title": "DetectIn",
+        "type": "object"
+      },
+      "DetectOut": {
+        "properties": {
+          "as_of": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "As Of",
+            "type": "string"
+          },
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "superseded": {
+            "title": "Superseded",
+            "type": "integer"
+          },
+          "unchanged": {
+            "title": "Unchanged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "as_of",
+          "created",
+          "unchanged",
+          "superseded"
+        ],
+        "title": "DetectOut",
+        "type": "object"
+      },
+      "EmployeeOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "enum": [
+              "US-STD",
+              "US-CA"
+            ],
+            "title": "Jurisdiction",
+            "type": "string"
+          },
+          "manager_id": {
+            "title": "Manager Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ot_eligible": {
+            "title": "Ot Eligible",
+            "type": "boolean"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "site": {
+            "title": "Site",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "site",
+          "jurisdiction",
+          "manager_id",
+          "ot_eligible"
+        ],
+        "title": "EmployeeOut",
+        "type": "object"
+      },
+      "ErrorOut": {
+        "properties": {
+          "checks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CheckResult"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checks"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "code"
+        ],
+        "title": "ErrorOut",
+        "type": "object"
+      },
+      "ExceptionDetail": {
+        "properties": {
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecisionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "employee": {
+            "$ref": "#/components/schemas/EmployeeOut"
+          },
+          "exception": {
+            "$ref": "#/components/schemas/ExceptionOut"
+          },
+          "latest_proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policies": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyPassage"
+            },
+            "title": "Policies",
+            "type": "array"
+          },
+          "timecard": {
+            "$ref": "#/components/schemas/TimecardOut"
+          }
+        },
+        "required": [
+          "exception",
+          "employee",
+          "timecard",
+          "policies",
+          "latest_proposal",
+          "decision"
+        ],
+        "title": "ExceptionDetail",
+        "type": "object"
+      },
+      "ExceptionOut": {
+        "properties": {
+          "constraints": {
+            "$ref": "#/components/schemas/Constraints"
+          },
+          "detected_at": {
+            "title": "Detected At",
+            "type": "string"
+          },
+          "employee_id": {
+            "title": "Employee Id",
+            "type": "string"
+          },
+          "employee_name": {
+            "title": "Employee Name",
+            "type": "string"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExceptionStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "work_date": {
+            "title": "Work Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employee_id",
+          "employee_name",
+          "work_date",
+          "rule_id",
+          "title",
+          "severity",
+          "status",
+          "detected_at",
+          "evidence",
+          "constraints"
+        ],
+        "title": "ExceptionOut",
+        "type": "object"
+      },
+      "ExceptionStatus": {
+        "enum": [
+          "OPEN",
+          "PENDING_REVIEW",
+          "ESCALATED",
+          "RESOLVED",
+          "REJECTED",
+          "SUPERSEDED"
+        ],
+        "title": "ExceptionStatus",
+        "type": "string"
+      },
+      "FaultMode": {
+        "enum": [
+          "none",
+          "bad_then_good",
+          "always_bad",
+          "garbage",
+          "timeout",
+          "bad_citation",
+          "naive_latest"
+        ],
+        "title": "FaultMode",
+        "type": "string"
+      },
+      "FlagType": {
+        "enum": [
+          "OT_APPROVAL",
+          "MEAL_PREMIUM_REVIEW",
+          "SCHEDULE_REVIEW",
+          "REST_PREMIUM_REVIEW",
+          "CONSECUTIVE_DAY_REVIEW"
+        ],
+        "title": "FlagType",
+        "type": "string"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthOut": {
+        "properties": {
+          "llm_reachable": {
+            "title": "Llm Reachable",
+            "type": "boolean"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "now": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "Now",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "provider",
+          "model",
+          "llm_reachable",
+          "now"
+        ],
+        "title": "HealthOut",
+        "type": "object"
+      },
+      "LLMModeIn": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/FaultMode"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "LLMModeIn",
+        "type": "object"
+      },
+      "LLMModeOut": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/FaultMode"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "provider",
+          "model"
+        ],
+        "title": "LLMModeOut",
+        "type": "object"
+      },
+      "LLMProposal": {
+        "additionalProperties": false,
+        "description": "Exact structured output contract expected from an LLM provider.",
+        "properties": {
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "exception_id": {
+            "title": "Exception Id",
+            "type": "integer"
+          },
+          "explanation": {
+            "maxLength": 600,
+            "minLength": 20,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "policy_ids_cited": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Policy Ids Cited",
+            "type": "array"
+          },
+          "proposed_correction": {
+            "$ref": "#/components/schemas/ProposedCorrection"
+          }
+        },
+        "required": [
+          "exception_id",
+          "explanation",
+          "proposed_correction",
+          "policy_ids_cited",
+          "confidence"
+        ],
+        "title": "LLMProposal",
+        "type": "object"
+      },
+      "MetricsOut": {
+        "properties": {
+          "approved_total": {
+            "title": "Approved Total",
+            "type": "integer"
+          },
+          "approved_without_edit_rate": {
+            "title": "Approved Without Edit Rate",
+            "type": "number"
+          },
+          "assumptions": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Assumptions",
+            "type": "object"
+          },
+          "by_rule": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Rule",
+            "type": "object"
+          },
+          "by_severity": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Severity",
+            "type": "object"
+          },
+          "by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Status",
+            "type": "object"
+          },
+          "escalation_rate": {
+            "title": "Escalation Rate",
+            "type": "number"
+          },
+          "estimated_minutes_saved": {
+            "title": "Estimated Minutes Saved",
+            "type": "number"
+          },
+          "final_pass_rate": {
+            "title": "Final Pass Rate",
+            "type": "number"
+          },
+          "first_pass_validation_rate": {
+            "title": "First Pass Validation Rate",
+            "type": "number"
+          },
+          "median_seconds_to_decision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Seconds To Decision"
+          },
+          "proposals_total": {
+            "title": "Proposals Total",
+            "type": "integer"
+          },
+          "total_exceptions": {
+            "title": "Total Exceptions",
+            "type": "integer"
+          },
+          "unsafe_proposals_reaching_manager": {
+            "title": "Unsafe Proposals Reaching Manager",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_exceptions",
+          "by_status",
+          "by_rule",
+          "by_severity",
+          "proposals_total",
+          "first_pass_validation_rate",
+          "final_pass_rate",
+          "escalation_rate",
+          "approved_total",
+          "approved_without_edit_rate",
+          "median_seconds_to_decision",
+          "estimated_minutes_saved",
+          "assumptions",
+          "unsafe_proposals_reaching_manager"
+        ],
+        "title": "MetricsOut",
+        "type": "object"
+      },
+      "PolicyPassage": {
+        "properties": {
+          "policy_id": {
+            "title": "Policy Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy_id",
+          "title",
+          "text"
+        ],
+        "title": "PolicyPassage",
+        "type": "object"
+      },
+      "ProposalOut": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "exception_id": {
+            "title": "Exception Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/LLMProposal"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ProposalSource"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationResult"
+          }
+        },
+        "required": [
+          "id",
+          "exception_id",
+          "trace_id",
+          "source",
+          "proposal",
+          "validation",
+          "attempts",
+          "model",
+          "latency_ms",
+          "created_at"
+        ],
+        "title": "ProposalOut",
+        "type": "object"
+      },
+      "ProposalSource": {
+        "enum": [
+          "llm",
+          "fallback"
+        ],
+        "title": "ProposalSource",
+        "type": "string"
+      },
+      "ProposedCorrection": {
+        "additionalProperties": false,
+        "description": "A flat, strictly validated correction proposed for human review.",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PunchKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "punch_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Punch Id"
+          },
+          "schedule_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Id"
+          },
+          "ts": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ts"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "ProposedCorrection",
+        "type": "object"
+      },
+      "PunchKind": {
+        "enum": [
+          "IN",
+          "OUT",
+          "BREAK_START",
+          "BREAK_END"
+        ],
+        "title": "PunchKind",
+        "type": "string"
+      },
+      "PunchOut": {
+        "properties": {
+          "employee_id": {
+            "title": "Employee Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PunchKind"
+          },
+          "source": {
+            "enum": [
+              "device",
+              "manual",
+              "correction"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "ts": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "Ts",
+            "type": "string"
+          },
+          "voided": {
+            "default": false,
+            "title": "Voided",
+            "type": "boolean"
+          },
+          "work_date": {
+            "title": "Work Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employee_id",
+          "work_date",
+          "ts",
+          "kind",
+          "source"
+        ],
+        "title": "PunchOut",
+        "type": "object"
+      },
+      "ScheduleOut": {
+        "properties": {
+          "employee_id": {
+            "title": "Employee Id",
+            "type": "string"
+          },
+          "end": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "End",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "planned_break_minutes": {
+            "title": "Planned Break Minutes",
+            "type": "integer"
+          },
+          "start": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "Start",
+            "type": "string"
+          },
+          "work_date": {
+            "title": "Work Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employee_id",
+          "work_date",
+          "start",
+          "end",
+          "planned_break_minutes"
+        ],
+        "title": "ScheduleOut",
+        "type": "object"
+      },
+      "Severity": {
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "title": "Severity",
+        "type": "string"
+      },
+      "SideEffect": {
+        "properties": {
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "work_date": {
+            "title": "Work Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "severity",
+          "work_date",
+          "summary"
+        ],
+        "title": "SideEffect",
+        "type": "object"
+      },
+      "TimeWindow": {
+        "properties": {
+          "earliest": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "Earliest",
+            "type": "string"
+          },
+          "latest": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+            "title": "Latest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "earliest",
+          "latest"
+        ],
+        "title": "TimeWindow",
+        "type": "object"
+      },
+      "TimecardOut": {
+        "properties": {
+          "employee": {
+            "$ref": "#/components/schemas/EmployeeOut"
+          },
+          "punches": {
+            "items": {
+              "$ref": "#/components/schemas/PunchOut"
+            },
+            "title": "Punches",
+            "type": "array"
+          },
+          "schedules": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleOut"
+            },
+            "title": "Schedules",
+            "type": "array"
+          },
+          "week_start": {
+            "title": "Week Start",
+            "type": "string"
+          },
+          "weekly_threshold_minutes": {
+            "title": "Weekly Threshold Minutes",
+            "type": "integer"
+          },
+          "weekly_worked_minutes": {
+            "title": "Weekly Worked Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "employee",
+          "week_start",
+          "punches",
+          "schedules",
+          "weekly_worked_minutes",
+          "weekly_threshold_minutes"
+        ],
+        "title": "TimecardOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationResult": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckResult"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "side_effects": {
+            "items": {
+              "$ref": "#/components/schemas/SideEffect"
+            },
+            "title": "Side Effects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "passed",
+          "checks"
+        ],
+        "title": "ValidationResult",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "ShiftGuard helps managers review timecard exceptions with evidence-based suggestions, policy context, and explicit approval before any payroll record changes.\n\nThe system pairs deterministic timekeeping rules with a constrained LLM proposal layer. Every proposal is checked, simulated, audited, and routed to a manager; the demo controls make provider faults visible and reproducible.",
+    "title": "ShiftGuard API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/admin/llm-mode": {
+      "get": {
+        "description": "Return the active simulation mode when demo controls are enabled.",
+        "operationId": "get_llm_mode_api_v1_admin_llm_mode_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMModeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read the demo LLM fault mode",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "Set the active fault mode and record the change in the audit trail.",
+        "operationId": "set_llm_mode_api_v1_admin_llm_mode_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LLMModeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMModeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change the demo LLM fault mode",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/reset-demo": {
+      "post": {
+        "description": "Recreate the demo data, reset fault injection, and run initial detection.",
+        "operationId": "reset_demo_api_v1_admin_reset_demo_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset and reseed the demo database",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/audit/verify": {
+      "get": {
+        "description": "Recompute and report the integrity of the complete audit chain.",
+        "operationId": "audit_verify_api_v1_audit_verify_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditVerifyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Verify the audit hash chain",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/v1/detect": {
+      "post": {
+        "description": "Run deterministic timecard checks and persist current findings.",
+        "operationId": "detect_api_v1_detect_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run exception detection",
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/employees/{employee_id}/timecard": {
+      "get": {
+        "description": "Return an employee's timecard for a selected or current Monday week.",
+        "operationId": "employee_timecard_api_v1_employees__employee_id__timecard_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employee_id",
+            "required": true,
+            "schema": {
+              "title": "Employee Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "week_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Week Start"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimecardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get an employee's weekly timecard",
+        "tags": [
+          "timecards"
+        ]
+      }
+    },
+    "/api/v1/exceptions": {
+      "get": {
+        "description": "Return filtered exceptions owned by the authenticated manager's team.",
+        "operationId": "list_exceptions_api_v1_exceptions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ExceptionStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Severity"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rule_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "employee_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Employee Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExceptionOut"
+                  },
+                  "title": "Response List Exceptions Api V1 Exceptions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List the current manager's exceptions",
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/exceptions/{exception_id}": {
+      "get": {
+        "description": "Return the exception, timecard, policies, latest proposal, and decision.",
+        "operationId": "exception_detail_api_v1_exceptions__exception_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exception_id",
+            "required": true,
+            "schema": {
+              "title": "Exception Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get exception evidence and review context",
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/exceptions/{exception_id}/audit": {
+      "get": {
+        "description": "Return the append-only audit trail for a manager-owned exception.",
+        "operationId": "exception_audit_api_v1_exceptions__exception_id__audit_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exception_id",
+            "required": true,
+            "schema": {
+              "title": "Exception Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEventOut"
+                  },
+                  "title": "Response Exception Audit Api V1 Exceptions  Exception Id  Audit Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List audit events for an exception",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/v1/exceptions/{exception_id}/decision": {
+      "post": {
+        "description": "Record a manager decision and apply an approved correction.",
+        "operationId": "create_decision_api_v1_exceptions__exception_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exception_id",
+            "required": true,
+            "schema": {
+              "title": "Exception Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Approve, edit, or reject a proposal",
+        "tags": [
+          "decisions"
+        ]
+      }
+    },
+    "/api/v1/exceptions/{exception_id}/propose": {
+      "post": {
+        "description": "Generate, validate, and persist a proposal for manager review.",
+        "operationId": "create_proposal_api_v1_exceptions__exception_id__propose_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exception_id",
+            "required": true,
+            "schema": {
+              "title": "Exception Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Manager-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Manager-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate a validated manager proposal",
+        "tags": [
+          "proposals"
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "description": "Report API health and whether the configured LLM provider responds.",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Check API and LLM availability",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "description": "Report proposal throughput, review outcomes, savings, and current risk.",
+        "operationId": "metrics_api_v1_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get workflow and safety metrics",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/v1/policies": {
+      "get": {
+        "description": "List the policy passages used by deterministic detection and proposals.",
+        "operationId": "list_policies_api_v1_policies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PolicyPassage"
+                  },
+                  "title": "Response List Policies Api V1 Policies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List policy passages",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/policies/{policy_id}": {
+      "get": {
+        "description": "Return a policy passage by its frozen rule identifier.",
+        "operationId": "policy_detail_api_v1_policies__policy_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyPassage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get one policy passage",
+        "tags": [
+          "policies"
+        ]
+      }
+    }
+  }
+}
