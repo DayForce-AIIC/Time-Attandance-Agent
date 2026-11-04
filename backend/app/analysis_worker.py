@@ -438,7 +438,7 @@ class AttendanceAnalysisWorker:
         week_summary: dict[str, int],
     ) -> None:
         organization_id = UUID(str(job["organization_id"]))
-        case_id_num = int(case_key[:15], 16)
+        case_id_num = _model_correlation_id(case_key)
         synthetic_exception = ExceptionRecord(
             id=case_id_num,
             employee_id=str(employee["id"]),
@@ -838,6 +838,17 @@ def _analysis_time(work_date: date, zone: ZoneInfo) -> datetime:
 def _stable_internal_id(reference: str) -> int:
     """Map an opaque company ID to a repeatable positive ID for existing validators."""
     return int(hashlib.sha256(reference.encode("utf-8")).hexdigest()[:8], 16) or 1
+
+
+def _model_correlation_id(case_key: str) -> int:
+    """Return a deterministic case reference that JSON clients can represent exactly.
+
+    This is only used inside the model proposal contract; the durable workflow
+    identity remains the UUID stored in ``exception_cases``. Thirteen hex digits
+    fit comfortably below JavaScript's maximum safe integer, unlike the prior
+    fifteen-digit slice.
+    """
+    return int(case_key[:13], 16) or 1
 
 
 def _canonical_record_hash(record: AttendanceRecord) -> str:
