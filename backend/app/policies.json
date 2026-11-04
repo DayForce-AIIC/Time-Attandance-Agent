@@ -1,0 +1,182 @@
+{
+  "version": "2025-03-01",
+  "global": {
+    "grace_missing_out_minutes": 60,
+    "dup_window_minutes": 10,
+    "sched_deviation_minutes": 30,
+    "max_shift_hours": 16,
+    "window_pad_minutes": 120,
+    "min_adjusted_worked_hours": 4,
+    "low_confidence_threshold": 0.6
+  },
+  "jurisdictions": {
+    "US-STD": {
+      "weekly_ot_hours": 40,
+      "daily_ot_hours": null,
+      "meal_after_hours": 5,
+      "meal_min_minutes": 30,
+      "min_rest_hours": 10,
+      "max_consecutive_days": 6
+    },
+    "US-CA": {
+      "weekly_ot_hours": 40,
+      "daily_ot_hours": 8,
+      "meal_after_hours": 5,
+      "meal_min_minutes": 30,
+      "min_rest_hours": 10,
+      "max_consecutive_days": 6
+    }
+  },
+  "rules": [
+    {
+      "id": "PUNCH-01",
+      "title": "Missing out-punch",
+      "category": "punch",
+      "severity": "high",
+      "allowed_actions": ["ADD_PUNCH", "ESCALATE"],
+      "flag_type": null,
+      "related": ["PUNCH-02", "MAX-01"],
+      "text": "Time & Attendance Policy §2.1: Every shift must end with an OUT punch. If an OUT punch is missing, a manager may add one only at a time supported by evidence (scheduled end or last recorded activity) and never later than 2 hours after the scheduled end."
+    },
+    {
+      "id": "PUNCH-02",
+      "title": "Missing in-punch",
+      "category": "punch",
+      "severity": "high",
+      "allowed_actions": ["ADD_PUNCH", "ESCALATE"],
+      "flag_type": null,
+      "related": ["PUNCH-01"],
+      "text": "Time & Attendance Policy §2.2: Every shift must begin with an IN punch. A missing IN punch may be added by a manager at a time supported by evidence, no earlier than 2 hours before the scheduled start and before the recorded OUT punch."
+    },
+    {
+      "id": "PUNCH-03",
+      "title": "Duplicate punch",
+      "category": "punch",
+      "severity": "low",
+      "allowed_actions": ["REMOVE_PUNCH", "ESCALATE"],
+      "flag_type": null,
+      "related": [],
+      "text": "Time & Attendance Policy §2.3: Two punches of the same type within 10 minutes are treated as a device duplicate. The later punch is voided and the earlier one stands."
+    },
+    {
+      "id": "PUNCH-04",
+      "title": "Missing break-end punch",
+      "category": "punch",
+      "severity": "medium",
+      "allowed_actions": ["ADD_PUNCH", "ESCALATE"],
+      "flag_type": null,
+      "related": ["BRK-02"],
+      "text": "Time & Attendance Policy §2.4: A break that was started must be ended. A missing BREAK_END may be added only between the break start and the next recorded punch, and the break may not be recorded as longer than 2 hours."
+    },
+    {
+      "id": "PUNCH-99",
+      "title": "Unparseable punch sequence",
+      "category": "punch",
+      "severity": "high",
+      "allowed_actions": ["ESCALATE"],
+      "flag_type": null,
+      "related": [],
+      "text": "Time & Attendance Policy §2.9: Punch sequences that cannot be interpreted (for example punches after an OUT, or a BREAK_END with no BREAK_START) must be reviewed manually. No automatic correction is allowed."
+    },
+    {
+      "id": "MAX-01",
+      "title": "Implausible shift length",
+      "category": "punch",
+      "severity": "high",
+      "allowed_actions": ["MODIFY_PUNCH", "ESCALATE"],
+      "flag_type": null,
+      "related": ["PUNCH-01"],
+      "text": "Time & Attendance Policy §3.1: A single shift longer than 16 hours is presumed to contain a punch error. The OUT punch may be corrected to a time supported by evidence, no later than 2 hours after the scheduled end."
+    },
+    {
+      "id": "BRK-01",
+      "title": "Meal break missing",
+      "category": "break",
+      "severity": "medium",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "MEAL_PREMIUM_REVIEW",
+      "related": ["BRK-02"],
+      "text": "Time & Attendance Policy §4.1: Employees working more than 5 hours must record an unpaid meal break of at least 30 minutes. A missing break is never added retroactively; it is reviewed for meal-premium pay."
+    },
+    {
+      "id": "BRK-02",
+      "title": "Meal break too short",
+      "category": "break",
+      "severity": "medium",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "MEAL_PREMIUM_REVIEW",
+      "related": ["BRK-01"],
+      "text": "Time & Attendance Policy §4.2: A recorded meal break shorter than 30 minutes on a shift longer than 5 hours is a violation. Break times are never edited to remove the violation; it is reviewed for meal-premium pay."
+    },
+    {
+      "id": "OT-01",
+      "title": "Weekly overtime exceeded",
+      "category": "overtime",
+      "severity": "high",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "OT_APPROVAL",
+      "related": ["OT-02", "OT-03"],
+      "text": "Time & Attendance Policy §5.1: Worked time above 40 hours in the Monday-Sunday pay week is overtime and requires manager approval. Hours are never reduced to avoid overtime."
+    },
+    {
+      "id": "OT-02",
+      "title": "Weekly overtime risk",
+      "category": "overtime",
+      "severity": "medium",
+      "allowed_actions": ["ADJUST_SCHEDULE", "FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "OT_APPROVAL",
+      "related": ["OT-01"],
+      "text": "Time & Attendance Policy §5.2: When completed hours plus remaining scheduled hours would exceed 40 for the week, the manager should shorten remaining shifts to stay within 40 hours, or pre-approve the overtime. No shift may be shortened below 4 worked hours."
+    },
+    {
+      "id": "OT-03",
+      "title": "Daily overtime",
+      "category": "overtime",
+      "severity": "medium",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "OT_APPROVAL",
+      "related": ["OT-01"],
+      "text": "Time & Attendance Policy §5.3: In jurisdictions with daily overtime (US-CA), worked time above 8 hours in one day is overtime and requires manager approval."
+    },
+    {
+      "id": "SCHED-01",
+      "title": "Schedule deviation",
+      "category": "schedule",
+      "severity": "low",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "SCHEDULE_REVIEW",
+      "related": ["SCHED-02"],
+      "text": "Time & Attendance Policy §6.1: Start or end times that differ from the schedule by more than 30 minutes require manager acknowledgement."
+    },
+    {
+      "id": "SCHED-02",
+      "title": "Unscheduled work",
+      "category": "schedule",
+      "severity": "medium",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "SCHEDULE_REVIEW",
+      "related": ["SCHED-01"],
+      "text": "Time & Attendance Policy §6.2: Work recorded on a day with no scheduled shift requires manager approval before it is paid."
+    },
+    {
+      "id": "REST-01",
+      "title": "Insufficient rest between shifts",
+      "category": "rest",
+      "severity": "medium",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "REST_PREMIUM_REVIEW",
+      "related": [],
+      "text": "Time & Attendance Policy §7.1: Employees must have at least 10 hours between the end of one shift and the start of the next. Shorter gaps are reviewed for rest-period premium pay."
+    },
+    {
+      "id": "DAY-01",
+      "title": "Too many consecutive days",
+      "category": "days",
+      "severity": "medium",
+      "allowed_actions": ["FLAG_FOR_APPROVAL", "ESCALATE"],
+      "flag_type": "CONSECUTIVE_DAY_REVIEW",
+      "related": ["OT-01"],
+      "text": "Time & Attendance Policy §8.1: Employees may not work more than 6 consecutive days. The 7th consecutive day requires manager review."
+    }
+  ]
+}
