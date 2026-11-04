@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
+from psycopg import Error as PostgresError
 
 from app import repo
-from app.assistant import answer_attendance_question
+from app.assistant import answer_attendance_question, answer_workflow_attendance_question
 from app.audit import verify_chain
 from app.auth import Principal
 from app.clock import Clock
@@ -24,15 +27,19 @@ from app.deps import (
     get_book,
     get_clock,
     get_conn,
+    get_hr_review_service,
     get_llm,
     get_settings,
+    get_workflow_repository,
     require_hr,
 )
 from app.detection import run_detection
 from app.engine.shifts import build_shifts
 from app.errors import Forbidden, NotFound
+from app.hr_review import HRReviewService
 from app.llm.base import LLMTimeout, LLMUnavailable
 from app.llm.ollama import ollama_model_is_available
+from app.logging_setup import trace_id_var
 from app.metrics import calculate_metrics
 from app.pipeline import propose
 from app.policies import PolicyBook, all_passages, get_rule, retrieve_policies
@@ -41,6 +48,10 @@ from app.schemas import (
     AssistantQuestion,
     AuditEventOut,
     AuditVerifyOut,
+    ConversationDeleteOut,
+    ConversationDetailOut,
+    ConversationMessageOut,
+    ConversationSummaryOut,
     CurrentUserOut,
     DecisionIn,
     DecisionOut,
@@ -59,11 +70,13 @@ from app.schemas import (
     PolicyPassage,
     ProposalOut,
     PunchOut,
+    ReadinessOut,
     ScheduleOut,
     Severity,
     TimecardOut,
 )
 from app.seed import seed
+from app.workflow_repository import PostgresWorkflowRepository
 
 router = APIRouter(prefix="/api/v1")
 
@@ -90,15 +103,22 @@ def current_user(principal: Principal = Depends(current_principal)) -> CurrentUs
     response_model=AssistantAnswer,
     summary="Answer a manager's read-only attendance question",
     tags=["assistant"],
-    responses={403: {"model": ErrorOut}, 503: {"model": ErrorOut}},
+    responses={
+        403: {"model": ErrorOut},
+        429: {"model": ErrorOut},
+        503: {"model": ErrorOut},
+    },
 )
 def assistant_query(
     body: AssistantQuestion,
+    request: Request,
     conn: sqlite3.Connection = Depends(get_conn),
     manager_id: str = Depends(current_manager),
     llm=Depends(get_llm),
     book: PolicyBook = Depends(get_book),
     settings: Settings = Depends(get_settings),
+    principal: Principal = Depends(current_principal),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
 ) -> AssistantAnswer:
     """Answer attendance questions only when the configured Ollama model is available."""
     if settings.llm_provider != "ollama":
@@ -107,6 +127,11 @@ def assistant_query(
             detail="Ask ShiftGuard requires Ollama. Switch from mock mode and restart the backend.",
         )
     if not ollama_model_is_available(settings):
+        request.app.state.operational_alerts.report_failure(
+            "ollama",
+            "configured_model_unavailable",
+            trace_id=trace_id_var.get(),
+        )
         raise HTTPException(
             status_code=503,
             detail=(
@@ -115,12 +140,157 @@ def assistant_query(
             ),
         )
     try:
-        return answer_attendance_question(conn, manager_id, body.question.strip(), llm, book)
+        if settings.auth_mode == "supabase":
+            if principal.role != "HR" or principal.organization_id is None:
+                raise Forbidden("HR role required")
+            if workflow_repository is None:
+                raise HTTPException(status_code=503, detail="Conversation storage is unavailable")
+            user_id = UUID(principal.user_id)
+            history: list[dict[str, str]] = []
+            if body.conversation_id is not None:
+                if (
+                    workflow_repository.get_conversation(
+                        body.conversation_id, principal.organization_id, user_id
+                    )
+                    is None
+                ):
+                    raise NotFound("conversation was not found")
+                prior_messages = workflow_repository.list_conversation_messages(
+                    body.conversation_id,
+                    principal.organization_id,
+                    user_id,
+                    limit=8,
+                )
+                history = [
+                    {"role": str(message["role"]), "content": str(message["content"])[:1200]}
+                    for message in prior_messages
+                ]
+            answer = answer_workflow_attendance_question(
+                workflow_repository,
+                principal.organization_id,
+                body.question.strip(),
+                llm,
+                book,
+                history,
+            )
+            request.app.state.operational_alerts.report_success("ollama")
+            conversation_id = workflow_repository.persist_conversation_exchange(
+                organization_id=principal.organization_id,
+                user_id=user_id,
+                conversation_id=body.conversation_id,
+                title=body.question.strip(),
+                question=body.question.strip(),
+                answer=answer.answer,
+                model=answer.model,
+                source_references=[source.model_dump(mode="json") for source in answer.sources],
+            )
+            return answer.model_copy(update={"conversation_id": conversation_id})
+        answer = answer_attendance_question(conn, manager_id, body.question.strip(), llm, book)
+        request.app.state.operational_alerts.report_success("ollama")
+        return answer
     except (LLMTimeout, LLMUnavailable) as exc:
+        request.app.state.operational_alerts.report_failure(
+            "ollama",
+            "llm_timeout" if isinstance(exc, LLMTimeout) else "llm_unavailable",
+            trace_id=trace_id_var.get(),
+        )
         raise HTTPException(
             status_code=503,
             detail="Ollama did not return a valid answer. Check the model and try again.",
         ) from exc
+
+
+@router.get(
+    "/assistant/conversations",
+    response_model=list[ConversationSummaryOut],
+    summary="List the signed-in HR user's saved conversations",
+    tags=["assistant"],
+)
+def list_assistant_conversations(
+    principal: Principal = Depends(current_principal),
+    settings: Settings = Depends(get_settings),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> list[ConversationSummaryOut]:
+    """Return conversation summaries scoped to the authenticated HR user."""
+    if settings.auth_mode == "demo":
+        return []
+    if principal.role != "HR" or principal.organization_id is None:
+        raise Forbidden("HR role required")
+    if workflow_repository is None:
+        raise HTTPException(status_code=503, detail="Conversation storage is unavailable")
+    rows = workflow_repository.list_conversations(
+        principal.organization_id, UUID(principal.user_id), limit=100
+    )
+    return [ConversationSummaryOut.model_validate(row) for row in rows]
+
+
+@router.get(
+    "/assistant/conversations/{conversation_id}",
+    response_model=ConversationDetailOut,
+    summary="Reopen one of the signed-in HR user's conversations",
+    tags=["assistant"],
+    responses={403: {"model": ErrorOut}, 404: {"model": ErrorOut}},
+)
+def assistant_conversation_detail(
+    conversation_id: str,
+    principal: Principal = Depends(current_principal),
+    settings: Settings = Depends(get_settings),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> ConversationDetailOut:
+    """Load one private conversation and its persisted citations."""
+    if settings.auth_mode == "demo" or principal.organization_id is None:
+        raise NotFound("conversation was not found")
+    if principal.role != "HR":
+        raise Forbidden("HR role required")
+    if workflow_repository is None:
+        raise HTTPException(status_code=503, detail="Conversation storage is unavailable")
+    parsed_id = _parse_uuid_id(conversation_id, "conversation")
+    user_id = UUID(principal.user_id)
+    conversation = workflow_repository.get_conversation(
+        parsed_id, principal.organization_id, user_id
+    )
+    if conversation is None:
+        raise NotFound("conversation was not found")
+    messages = workflow_repository.list_conversation_messages(
+        parsed_id, principal.organization_id, user_id, limit=200
+    )
+    return ConversationDetailOut(
+        id=parsed_id,
+        title=conversation.get("title"),
+        created_at=conversation["created_at"],
+        updated_at=conversation["updated_at"],
+        messages=[ConversationMessageOut.model_validate(message) for message in messages],
+    )
+
+
+@router.delete(
+    "/assistant/conversations/{conversation_id}",
+    response_model=ConversationDeleteOut,
+    summary="Delete one of the signed-in HR user's conversations",
+    tags=["assistant"],
+    responses={403: {"model": ErrorOut}, 404: {"model": ErrorOut}},
+)
+def delete_assistant_conversation(
+    conversation_id: str,
+    principal: Principal = Depends(current_principal),
+    settings: Settings = Depends(get_settings),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> ConversationDeleteOut:
+    """Delete a private conversation and its messages for retention control."""
+    if settings.auth_mode == "demo" or principal.organization_id is None:
+        raise NotFound("conversation was not found")
+    if principal.role != "HR":
+        raise Forbidden("HR role required")
+    if workflow_repository is None:
+        raise HTTPException(status_code=503, detail="Conversation storage is unavailable")
+    deleted = workflow_repository.delete_conversation(
+        _parse_uuid_id(conversation_id, "conversation"),
+        principal.organization_id,
+        UUID(principal.user_id),
+    )
+    if not deleted:
+        raise NotFound("conversation was not found")
+    return ConversationDeleteOut(deleted=True)
 
 
 @router.get(
@@ -130,17 +300,90 @@ def health(
     settings: Settings = Depends(get_settings), clock: Clock = Depends(get_clock)
 ) -> HealthOut:
     """Report API health and whether the configured provider/model is available."""
-    reachable = (
-        True
-        if settings.llm_provider == "mock"
-        else ollama_model_is_available(settings)
-    )
+    reachable = True if settings.llm_provider == "mock" else ollama_model_is_available(settings)
     return HealthOut(
         status="ok",
         provider=settings.llm_provider,
         model=_model_name(settings),
         llm_reachable=reachable,
         now=clock.now().strftime("%Y-%m-%dT%H:%M"),
+    )
+
+
+@router.get(
+    "/health/ready",
+    response_model=ReadinessOut,
+    summary="Check readiness of the database, worker, provider, and model",
+    tags=["health"],
+)
+def readiness(
+    settings: Settings = Depends(get_settings),
+    conn: sqlite3.Connection = Depends(get_conn),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> JSONResponse:
+    """Report operational dependencies for a platform readiness probe."""
+    checks = {
+        "database": False,
+        "analysis_worker": settings.auth_mode == "demo",
+        "attendance_provider": True,
+        "llm": settings.llm_provider == "mock",
+    }
+    heartbeat_age: int | None = None
+    try:
+        if workflow_repository is not None:
+            workflow_repository.connection.execute("SELECT 1").fetchone()
+        else:
+            conn.execute("SELECT 1").fetchone()
+    except (PostgresError, sqlite3.Error):
+        checks["database"] = False
+    else:
+        checks["database"] = True
+
+    if (
+        checks["database"]
+        and workflow_repository is not None
+        and settings.auth_organization_id is not None
+    ):
+        try:
+            heartbeat = workflow_repository.get_latest_service_heartbeat(
+                settings.auth_organization_id, "analysis_worker"
+            )
+        except PostgresError:
+            checks["analysis_worker"] = False
+        else:
+            last_seen = heartbeat.get("last_seen_at") if heartbeat else None
+            if isinstance(last_seen, datetime):
+                aware_last_seen = (
+                    last_seen.replace(tzinfo=timezone.utc)
+                    if last_seen.tzinfo is None
+                    else last_seen
+                )
+                heartbeat_age = max(
+                    0, int((datetime.now(timezone.utc) - aware_last_seen).total_seconds())
+                )
+                checks["analysis_worker"] = (
+                    heartbeat_age <= settings.analysis_worker_heartbeat_timeout_seconds
+                )
+
+    if settings.attendance_provider == "http":
+        checks["attendance_provider"] = bool(
+            settings.attendance_api_base_url
+            and settings.attendance_api_token
+            and settings.attendance_api_token.get_secret_value().strip()
+        )
+    if settings.llm_provider == "ollama":
+        checks["llm"] = ollama_model_is_available(settings)
+
+    ready = all(checks.values())
+    result = ReadinessOut(
+        status="ready" if ready else "not_ready",
+        checks=checks,
+        worker_heartbeat_age_seconds=heartbeat_age,
+        now=datetime.now(timezone.utc),
+    )
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content=result.model_dump(mode="json"),
     )
 
 
@@ -153,8 +396,14 @@ def detect(
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
     principal: Principal = Depends(current_principal),
+    settings: Settings = Depends(get_settings),
 ) -> DetectOut:
     """Run deterministic checks only for the authenticated user's permitted team."""
+    if settings.auth_mode != "demo":
+        raise HTTPException(
+            status_code=409,
+            detail="Attendance analysis runs automatically from company events in HR mode.",
+        )
     as_of = datetime.strptime(body.as_of, "%Y-%m-%dT%H:%M") if body.as_of else clock.now()
     employees = repo.list_employees(conn)
     if principal.role != "HR" and principal.manager_ref is not None:
@@ -189,8 +438,18 @@ def list_exceptions(
     conn: sqlite3.Connection = Depends(get_conn),
     manager_id: str = Depends(current_manager),
     book: PolicyBook = Depends(get_book),
+    review: HRReviewService | None = Depends(get_hr_review_service),
 ) -> list[ExceptionOut]:
     """Return filtered exceptions owned by the authenticated manager's team."""
+    if review is not None:
+        return review.list_cases(
+            status=status,
+            severity=severity,
+            rule_id=rule_id,
+            employee_id=employee_id,
+            limit=limit,
+            offset=offset,
+        )
     rows = repo.list_exceptions_for_manager(
         conn,
         manager_id,
@@ -212,14 +471,21 @@ def list_exceptions(
     responses={403: {"model": ErrorOut}, 404: {"model": ErrorOut}},
 )
 def exception_detail(
-    exception_id: int,
+    exception_id: str,
     conn: sqlite3.Connection = Depends(get_conn),
     manager_id: str = Depends(current_manager),
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
+    review: HRReviewService | None = Depends(get_hr_review_service),
 ) -> ExceptionDetail:
     """Return the exception, timecard, policies, latest proposal, and decision."""
-    row = repo.get_exception(conn, exception_id)
+    if review is not None:
+        return review.get_case_detail(_parse_uuid_case_id(exception_id))
+    try:
+        numeric_exception_id = int(exception_id)
+    except ValueError as exc:
+        raise NotFound(f"exception {exception_id} was not found") from exc
+    row = repo.get_exception(conn, numeric_exception_id)
     if row is None:
         raise NotFound(f"exception {exception_id} was not found")
     employee = _authorized_employee(conn, str(row["employee_id"]), manager_id)
@@ -230,8 +496,8 @@ def exception_detail(
         book,
         week_date=date.fromisoformat(str(row["work_date"])),
     )
-    proposal_row = repo.get_latest_proposal(conn, exception_id)
-    decision_row = repo.get_latest_decision(conn, exception_id)
+    proposal_row = repo.get_latest_proposal(conn, numeric_exception_id)
+    decision_row = repo.get_latest_decision(conn, numeric_exception_id)
     return ExceptionDetail(
         exception=_exception_out(row, book, employee_name=str(employee["name"])),
         employee=EmployeeOut.model_validate(dict(employee)),
@@ -250,20 +516,30 @@ def exception_detail(
     responses={403: {"model": ErrorOut}, 404: {"model": ErrorOut}, 409: {"model": ErrorOut}},
 )
 def create_proposal(
-    exception_id: int,
+    exception_id: str,
     conn: sqlite3.Connection = Depends(get_conn),
     manager_id: str = Depends(current_manager),
     llm=Depends(get_llm),
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
     settings: Settings = Depends(get_settings),
+    review: HRReviewService | None = Depends(get_hr_review_service),
 ) -> ProposalOut:
     """Generate, validate, and persist a proposal for manager review."""
-    row = repo.get_exception(conn, exception_id)
+    if review is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Supabase cases are analyzed automatically by the durable analysis worker.",
+        )
+    try:
+        numeric_exception_id = int(exception_id)
+    except ValueError as exc:
+        raise NotFound(f"exception {exception_id} was not found") from exc
+    row = repo.get_exception(conn, numeric_exception_id)
     if row is None:
         raise NotFound(f"exception {exception_id} was not found")
     _authorized_employee(conn, str(row["employee_id"]), manager_id)
-    return propose(conn, exception_id, llm, clock, book, settings)
+    return propose(conn, numeric_exception_id, llm, clock, book, settings)
 
 
 @router.post(
@@ -277,22 +553,34 @@ def create_proposal(
         404: {"model": ErrorOut},
         409: {"model": ErrorOut},
         422: {"model": ErrorOut},
+        429: {"model": ErrorOut},
     },
 )
 def create_decision(
-    exception_id: int,
+    exception_id: str,
     body: DecisionIn,
     conn: sqlite3.Connection = Depends(get_conn),
     principal: Principal = Depends(current_principal),
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
+    review: HRReviewService | None = Depends(get_hr_review_service),
 ) -> DecisionOut:
     """Record a manager decision and apply an approved correction."""
+    if review is not None:
+        try:
+            actor_uuid = UUID(principal.user_id)
+        except ValueError as exc:
+            raise Forbidden("a verified HR user identity is required") from exc
+        return review.decide(_parse_uuid_case_id(exception_id), body, actor_uuid)
+    try:
+        numeric_exception_id = int(exception_id)
+    except ValueError as exc:
+        raise NotFound(f"exception {exception_id} was not found") from exc
     manager_scope = principal.manager_ref or "*"
     actor_id = principal.manager_ref if principal.is_demo else principal.user_id
     return decide(
         conn,
-        exception_id,
+        numeric_exception_id,
         manager_scope,
         body,
         clock,
@@ -310,16 +598,49 @@ def create_decision(
     responses={403: {"model": ErrorOut}, 404: {"model": ErrorOut}},
 )
 def exception_audit(
-    exception_id: int,
+    exception_id: str,
     conn: sqlite3.Connection = Depends(get_conn),
     manager_id: str = Depends(current_manager),
+    review: HRReviewService | None = Depends(get_hr_review_service),
 ) -> list[AuditEventOut]:
     """Return the append-only audit trail for a manager-owned exception."""
-    row = repo.get_exception(conn, exception_id)
+    if review is not None:
+        return review.audit_events(_parse_uuid_case_id(exception_id))
+    try:
+        numeric_exception_id = int(exception_id)
+    except ValueError as exc:
+        raise NotFound(f"exception {exception_id} was not found") from exc
+    row = repo.get_exception(conn, numeric_exception_id)
     if row is None:
         raise NotFound(f"exception {exception_id} was not found")
     _authorized_employee(conn, str(row["employee_id"]), manager_id)
-    return [_audit_out(event) for event in repo.list_audit_events(conn, exception_id)]
+    return [_audit_out(event) for event in repo.list_audit_events(conn, numeric_exception_id)]
+
+
+@router.post(
+    "/decisions/{decision_id}/retry-writeback",
+    response_model=DecisionOut,
+    summary="Retry an approved company correction using its original idempotency key",
+    tags=["decisions"],
+    responses={
+        403: {"model": ErrorOut},
+        404: {"model": ErrorOut},
+        409: {"model": ErrorOut},
+        429: {"model": ErrorOut},
+    },
+)
+def retry_decision_writeback(
+    decision_id: str,
+    review: HRReviewService | None = Depends(get_hr_review_service),
+) -> DecisionOut:
+    """Retry a pending/failed writeback without creating a second HR decision."""
+    if review is None:
+        raise NotFound("company writeback recovery is unavailable in demo mode")
+    try:
+        parsed_id = UUID(decision_id)
+    except ValueError as exc:
+        raise NotFound(f"decision {decision_id} was not found") from exc
+    return review.retry_writeback(parsed_id)
 
 
 @router.get(
@@ -336,8 +657,11 @@ def employee_timecard(
     manager_id: str = Depends(current_manager),
     clock: Clock = Depends(get_clock),
     book: PolicyBook = Depends(get_book),
+    settings: Settings = Depends(get_settings),
 ) -> TimecardOut:
     """Return an employee's timecard for a selected or current Monday week."""
+    if settings.auth_mode != "demo":
+        raise NotFound("timecards are loaded from the company source while reviewing a case")
     employee = _authorized_employee(conn, employee_id, manager_id)
     return _timecard(conn, employee, clock.now().date(), book, week_start=week_start)
 
@@ -378,8 +702,11 @@ def policy_detail(policy_id: str) -> PolicyPassage:
 def audit_verify(
     conn: sqlite3.Connection = Depends(get_conn),
     _principal: Principal = Depends(require_hr),
+    review: HRReviewService | None = Depends(get_hr_review_service),
 ) -> AuditVerifyOut:
     """Recompute and report the integrity of the complete audit chain."""
+    if review is not None:
+        return review.verify_audit_chain()
     return verify_chain(conn)
 
 
@@ -397,6 +724,8 @@ def metrics(
     _principal: Principal = Depends(require_hr),
 ) -> MetricsOut:
     """Report proposal throughput, review outcomes, savings, and current risk."""
+    if settings.auth_mode != "demo":
+        raise NotFound("demo metrics are unavailable in authenticated HR mode")
     return calculate_metrics(conn, clock, book, settings)
 
 
@@ -493,6 +822,20 @@ def _authorized_employee(
     if manager_id != "*" and str(employee["manager_id"]) != manager_id:
         raise Forbidden("employee is not managed by this manager")
     return employee
+
+
+def _parse_uuid_case_id(value: str) -> UUID:
+    try:
+        return UUID(value)
+    except ValueError as exc:
+        raise NotFound(f"exception {value} was not found") from exc
+
+
+def _parse_uuid_id(value: str, entity: str) -> UUID:
+    try:
+        return UUID(value)
+    except ValueError as exc:
+        raise NotFound(f"{entity} was not found") from exc
 
 
 def _exception_out(

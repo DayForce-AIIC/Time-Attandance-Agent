@@ -3,6 +3,7 @@ import { ApiError } from "../api/client";
 import type { Severity } from "../api/schemas";
 
 const SEVERITY_MARK: Record<Severity, string> = {
+  critical: "◆",
   high: "▲",
   medium: "●",
   low: "○",

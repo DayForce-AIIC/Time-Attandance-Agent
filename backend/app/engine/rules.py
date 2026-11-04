@@ -249,6 +249,7 @@ def _detect_single_shift_rules(
     global_params: GlobalParams,
     jurisdiction_params: JurisdictionParams,
     book_rules: Mapping[str, PolicyRule],
+    overtime_eligible: bool,
 ) -> list[DetectedException]:
     if not shift.complete:
         return []
@@ -326,7 +327,11 @@ def _detect_single_shift_rules(
             )
 
     daily_ot_hours = jurisdiction_params.daily_ot_hours
-    if daily_ot_hours is not None and shift.worked_minutes > daily_ot_hours * 60:
+    if (
+        overtime_eligible
+        and daily_ot_hours is not None
+        and shift.worked_minutes > daily_ot_hours * 60
+    ):
         rule = book_rules["OT-03"]
         found.append(
             _exception(
@@ -626,6 +631,9 @@ def detect_employee(
         raise ValueError("employee must provide a jurisdiction present in the policy book")
 
     employee_id = employee_id_value
+    # SQLite returns INTEGER values while external providers commonly return bools.
+    eligibility = _employee_value(employee, "ot_eligible")
+    overtime_eligible = eligibility is True or (isinstance(eligibility, int) and eligibility == 1)
     start, history_start, week_end = _week_bounds(as_of)
     lower_bound = history_start
     relevant_punches = [
@@ -672,6 +680,7 @@ def detect_employee(
                     global_policy,
                     jurisdiction_policy,
                     book_rules,
+                    overtime_eligible,
                 )
             )
 
@@ -679,16 +688,20 @@ def detect_employee(
         finding.rule_id in {"MAX-01", "OT-03"} and start <= finding.work_date <= as_of.date()
         for finding in detected
     )
-    weekly = _detect_weekly_overtime(
-        shifts,
-        employee_id,
-        as_of,
-        start,
-        week_end,
-        jurisdiction_policy,
-        global_policy,
-        book_rules,
-        suppress_ot02=suppress_weekly_risk,
+    weekly = (
+        _detect_weekly_overtime(
+            shifts,
+            employee_id,
+            as_of,
+            start,
+            week_end,
+            jurisdiction_policy,
+            global_policy,
+            book_rules,
+            suppress_ot02=suppress_weekly_risk,
+        )
+        if overtime_eligible
+        else []
     )
     detected.extend(weekly)
     detected.extend(

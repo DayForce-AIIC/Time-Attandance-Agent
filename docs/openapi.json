@@ -20,6 +20,18 @@
             "title": "Answer",
             "type": "string"
           },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
           "model": {
             "title": "Model",
             "type": "string"
@@ -48,6 +60,18 @@
       "AssistantQuestion": {
         "description": "Bounded manager question for the read-only attendance assistant.",
         "properties": {
+          "conversation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
           "question": {
             "maxLength": 500,
             "minLength": 3,
@@ -119,6 +143,10 @@
             "anyOf": [
               {
                 "type": "integer"
+              },
+              {
+                "format": "uuid",
+                "type": "string"
               },
               {
                 "type": "null"
@@ -308,6 +336,172 @@
         "title": "Constraints",
         "type": "object"
       },
+      "ConversationDeleteOut": {
+        "properties": {
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "title": "ConversationDeleteOut",
+        "type": "object"
+      },
+      "ConversationDetailOut": {
+        "description": "Conversation metadata and chronological messages for reopening a chat.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationMessageOut"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "updated_at",
+          "messages"
+        ],
+        "title": "ConversationDetailOut",
+        "type": "object"
+      },
+      "ConversationMessageOut": {
+        "description": "One persisted user or assistant message with its retained citations.",
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "source_references": {
+            "items": {
+              "$ref": "#/components/schemas/AssistantSource"
+            },
+            "title": "Source References",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "content",
+          "model",
+          "source_references",
+          "created_at"
+        ],
+        "title": "ConversationMessageOut",
+        "type": "object"
+      },
+      "ConversationSummaryOut": {
+        "description": "One private conversation in a user's organization-scoped chat history.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_message_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message Preview"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "updated_at",
+          "last_message_preview"
+        ],
+        "title": "ConversationSummaryOut",
+        "type": "object"
+      },
       "CurrentUserOut": {
         "description": "Authenticated principal resolved from Supabase Auth and user_profiles.",
         "properties": {
@@ -419,8 +613,27 @@
             "type": "string"
           },
           "exception_id": {
-            "title": "Exception Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "format": "uuid",
+                "type": "string"
+              }
+            ],
+            "title": "Exception Id"
+          },
+          "external_operation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Operation Id"
           },
           "final_correction": {
             "anyOf": [
@@ -433,8 +646,16 @@
             ]
           },
           "id": {
-            "title": "Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "format": "uuid",
+                "type": "string"
+              }
+            ],
+            "title": "Id"
           },
           "manager_id": {
             "title": "Manager Id",
@@ -457,6 +678,10 @@
                 "type": "integer"
               },
               {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
                 "type": "null"
               }
             ],
@@ -464,6 +689,18 @@
           },
           "resulting_status": {
             "$ref": "#/components/schemas/ExceptionStatus"
+          },
+          "writeback_status": {
+            "default": "not_requested",
+            "enum": [
+              "not_requested",
+              "pending",
+              "applied",
+              "stale",
+              "failed"
+            ],
+            "title": "Writeback Status",
+            "type": "string"
           }
         },
         "required": [
@@ -548,42 +785,62 @@
             "type": "string"
           },
           "jurisdiction": {
-            "enum": [
-              "US-STD",
-              "US-CA"
-            ],
             "title": "Jurisdiction",
             "type": "string"
           },
           "manager_id": {
-            "title": "Manager Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Id"
           },
           "name": {
             "title": "Name",
             "type": "string"
           },
           "ot_eligible": {
-            "title": "Ot Eligible",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ot Eligible"
           },
           "role": {
-            "title": "Role",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
           },
           "site": {
-            "title": "Site",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site"
           }
         },
         "required": [
           "id",
           "name",
-          "role",
-          "site",
-          "jurisdiction",
-          "manager_id",
-          "ot_eligible"
+          "jurisdiction"
         ],
         "title": "EmployeeOut",
         "type": "object"
@@ -622,6 +879,17 @@
       },
       "ExceptionDetail": {
         "properties": {
+          "current_source_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Source Version"
+          },
           "decision": {
             "anyOf": [
               {
@@ -654,6 +922,22 @@
             },
             "title": "Policies",
             "type": "array"
+          },
+          "source_current": {
+            "default": true,
+            "title": "Source Current",
+            "type": "boolean"
+          },
+          "source_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Version"
           },
           "timecard": {
             "$ref": "#/components/schemas/TimecardOut"
@@ -693,8 +977,16 @@
             "type": "object"
           },
           "id": {
-            "title": "Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "format": "uuid",
+                "type": "string"
+              }
+            ],
+            "title": "Id"
           },
           "rule_id": {
             "title": "Rule Id",
@@ -738,7 +1030,9 @@
           "ESCALATED",
           "RESOLVED",
           "REJECTED",
-          "SUPERSEDED"
+          "SUPERSEDED",
+          "WRITEBACK_PENDING",
+          "WRITEBACK_FAILED"
         ],
         "title": "ExceptionStatus",
         "type": "string"
@@ -813,6 +1107,30 @@
           "now"
         ],
         "title": "HealthOut",
+        "type": "object"
+      },
+      "IntegrationEventAck": {
+        "properties": {
+          "duplicate": {
+            "title": "Duplicate",
+            "type": "boolean"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "accepted",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "status",
+          "duplicate"
+        ],
+        "title": "IntegrationEventAck",
         "type": "object"
       },
       "LLMModeIn": {
@@ -1023,12 +1341,28 @@
             "type": "string"
           },
           "exception_id": {
-            "title": "Exception Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "format": "uuid",
+                "type": "string"
+              }
+            ],
+            "title": "Exception Id"
           },
           "id": {
-            "title": "Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "format": "uuid",
+                "type": "string"
+              }
+            ],
+            "title": "Id"
           },
           "latency_ms": {
             "title": "Latency Ms",
@@ -1169,13 +1503,15 @@
             "$ref": "#/components/schemas/PunchKind"
           },
           "source": {
-            "enum": [
-              "device",
-              "manual",
-              "correction"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Source",
-            "type": "string"
+            "title": "Source"
           },
           "ts": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
@@ -1201,6 +1537,49 @@
           "source"
         ],
         "title": "PunchOut",
+        "type": "object"
+      },
+      "ReadinessOut": {
+        "description": "Operational dependency checks for deployment readiness probes.",
+        "properties": {
+          "checks": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "now": {
+            "format": "date-time",
+            "title": "Now",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "worker_heartbeat_age_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Heartbeat Age Seconds"
+          }
+        },
+        "required": [
+          "status",
+          "checks",
+          "now"
+        ],
+        "title": "ReadinessOut",
         "type": "object"
       },
       "ScheduleOut": {
@@ -1247,7 +1626,8 @@
         "enum": [
           "low",
           "medium",
-          "high"
+          "high",
+          "critical"
         ],
         "title": "Severity",
         "type": "string"
@@ -1323,8 +1703,15 @@
             "type": "string"
           },
           "weekly_threshold_minutes": {
-            "title": "Weekly Threshold Minutes",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Threshold Minutes"
           },
           "weekly_worked_minutes": {
             "title": "Weekly Worked Minutes",
@@ -1524,6 +1911,171 @@
         ]
       }
     },
+    "/api/v1/assistant/conversations": {
+      "get": {
+        "description": "Return conversation summaries scoped to the authenticated HR user.",
+        "operationId": "list_assistant_conversations_api_v1_assistant_conversations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummaryOut"
+                  },
+                  "title": "Response List Assistant Conversations Api V1 Assistant Conversations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List the signed-in HR user's saved conversations",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/api/v1/assistant/conversations/{conversation_id}": {
+      "delete": {
+        "description": "Delete a private conversation and its messages for retention control.",
+        "operationId": "delete_assistant_conversation_api_v1_assistant_conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDeleteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete one of the signed-in HR user's conversations",
+        "tags": [
+          "assistant"
+        ]
+      },
+      "get": {
+        "description": "Load one private conversation and its persisted citations.",
+        "operationId": "assistant_conversation_detail_api_v1_assistant_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reopen one of the signed-in HR user's conversations",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
     "/api/v1/assistant/query": {
       "post": {
         "description": "Answer attendance questions only when the configured Ollama model is available.",
@@ -1568,6 +2120,16 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "503": {
             "content": {
@@ -1615,6 +2177,94 @@
         "summary": "Verify the audit hash chain",
         "tags": [
           "audit"
+        ]
+      }
+    },
+    "/api/v1/decisions/{decision_id}/retry-writeback": {
+      "post": {
+        "description": "Retry a pending/failed writeback without creating a second HR decision.",
+        "operationId": "retry_decision_writeback_api_v1_decisions__decision_id__retry_writeback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "decision_id",
+            "required": true,
+            "schema": {
+              "title": "Decision Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry an approved company correction using its original idempotency key",
+        "tags": [
+          "decisions"
         ]
       }
     },
@@ -1901,7 +2551,7 @@
             "required": true,
             "schema": {
               "title": "Exception Id",
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -1969,7 +2619,7 @@
             "required": true,
             "schema": {
               "title": "Exception Id",
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -2041,7 +2691,7 @@
             "required": true,
             "schema": {
               "title": "Exception Id",
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -2115,6 +2765,16 @@
               }
             },
             "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
           }
         },
         "security": [
@@ -2139,7 +2799,7 @@
             "required": true,
             "schema": {
               "title": "Exception Id",
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -2223,6 +2883,28 @@
           }
         },
         "summary": "Check API and LLM availability",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "description": "Report operational dependencies for a platform readiness probe.",
+        "operationId": "readiness_api_v1_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Check readiness of the database, worker, provider, and model",
         "tags": [
           "health"
         ]
@@ -2358,6 +3040,186 @@
         "summary": "Get one policy passage",
         "tags": [
           "policies"
+        ]
+      }
+    },
+    "/integrations/v1/events/attendance-changed": {
+      "post": {
+        "description": "Authenticate, validate, and idempotently record a minimal webhook envelope.",
+        "operationId": "receive_attendance_event_integrations_v1_events_attendance_changed_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-company-event-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Company-Event-Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-company-timestamp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Company-Timestamp"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-company-signature",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Company-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "description": "Minimal webhook envelope; employee and punch histories are not accepted.",
+                "properties": {
+                  "event_id": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "title": "Event Id",
+                    "type": "string"
+                  },
+                  "event_type": {
+                    "enum": [
+                      "attendance.record.changed",
+                      "attendance.record.deleted"
+                    ],
+                    "title": "Event Type",
+                    "type": "string"
+                  },
+                  "occurred_at": {
+                    "format": "date-time",
+                    "title": "Occurred At",
+                    "type": "string"
+                  },
+                  "record": {
+                    "additionalProperties": false,
+                    "description": "Opaque company record identifiers and source version from a webhook.",
+                    "properties": {
+                      "employee_ref": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Employee Ref",
+                        "type": "string"
+                      },
+                      "record_ref": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Record Ref",
+                        "type": "string"
+                      },
+                      "record_type": {
+                        "const": "timecard_day",
+                        "title": "Record Type",
+                        "type": "string"
+                      },
+                      "updated_at": {
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "type": "string"
+                      },
+                      "version": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Version",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "employee_ref",
+                      "record_type",
+                      "record_ref",
+                      "version",
+                      "updated_at"
+                    ],
+                    "title": "AttendanceSourceReference",
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "event_id",
+                  "event_type",
+                  "occurred_at",
+                  "record"
+                ],
+                "title": "AttendanceChangedEvent",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEventAck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, expired, or invalid webhook signature"
+          },
+          "409": {
+            "description": "Event ID was reused with a different payload"
+          },
+          "413": {
+            "description": "Webhook body exceeds the configured limit"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Webhook rate limit exceeded; retry after the indicated delay"
+          },
+          "503": {
+            "description": "Integration intake is not configured or temporarily unavailable"
+          }
+        },
+        "summary": "Receive a signed attendance change event",
+        "tags": [
+          "company integration"
         ]
       }
     }

@@ -3,6 +3,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -27,6 +28,7 @@ class Severity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+    CRITICAL = "critical"
 
 
 class PunchKind(str, Enum):
@@ -60,6 +62,8 @@ class ExceptionStatus(str, Enum):
     RESOLVED = "RESOLVED"
     REJECTED = "REJECTED"
     SUPERSEDED = "SUPERSEDED"
+    WRITEBACK_PENDING = "WRITEBACK_PENDING"
+    WRITEBACK_FAILED = "WRITEBACK_FAILED"
 
 
 class ProposalSource(str, Enum):
@@ -180,6 +184,7 @@ class AssistantQuestion(BaseModel):
     """Bounded manager question for the read-only attendance assistant."""
 
     question: str = Field(min_length=3, max_length=500)
+    conversation_id: UUID | None = None
 
     @field_validator("question")
     @classmethod
@@ -207,7 +212,9 @@ class AssistantModelAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     in_scope: bool = Field(description="Whether the user's question is relevant to attendance.")
-    uses_evidence: bool = Field(description="Whether the answer relies on supplied evidence sources.")
+    uses_evidence: bool = Field(
+        description="Whether the answer relies on supplied evidence sources."
+    )
     answer: str = Field(min_length=5, max_length=1200)
     source_ids: list[str] = Field(max_length=55)
 
@@ -219,6 +226,42 @@ class AssistantAnswer(BaseModel):
     sources: list[AssistantSource]
     model: str
     used_fallback: bool
+    conversation_id: UUID | None = None
+
+
+class ConversationSummaryOut(BaseModel):
+    """One private conversation in a user's organization-scoped chat history."""
+
+    id: UUID
+    title: str | None
+    created_at: datetime
+    updated_at: datetime
+    last_message_preview: str | None
+
+
+class ConversationMessageOut(BaseModel):
+    """One persisted user or assistant message with its retained citations."""
+
+    id: UUID
+    role: Literal["user", "assistant"]
+    content: str
+    model: str | None
+    source_references: list[AssistantSource]
+    created_at: datetime
+
+
+class ConversationDetailOut(BaseModel):
+    """Conversation metadata and chronological messages for reopening a chat."""
+
+    id: UUID
+    title: str | None
+    created_at: datetime
+    updated_at: datetime
+    messages: list[ConversationMessageOut]
+
+
+class ConversationDeleteOut(BaseModel):
+    deleted: bool
 
 
 class PunchOut(BaseModel):
@@ -227,7 +270,7 @@ class PunchOut(BaseModel):
     work_date: str
     ts: LocalTs
     kind: PunchKind
-    source: Literal["device", "manual", "correction"]
+    source: str | None
     voided: bool = False
 
 
@@ -243,15 +286,15 @@ class ScheduleOut(BaseModel):
 class EmployeeOut(BaseModel):
     id: str
     name: str
-    role: str
-    site: str
-    jurisdiction: Literal["US-STD", "US-CA"]
-    manager_id: str
-    ot_eligible: bool
+    role: str | None = None
+    site: str | None = None
+    jurisdiction: str
+    manager_id: str | None = None
+    ot_eligible: bool | None = None
 
 
 class ExceptionOut(BaseModel):
-    id: int
+    id: int | UUID
     employee_id: str
     employee_name: str
     work_date: str
@@ -265,8 +308,8 @@ class ExceptionOut(BaseModel):
 
 
 class ProposalOut(BaseModel):
-    id: int
-    exception_id: int
+    id: int | UUID
+    exception_id: int | UUID
     trace_id: str
     source: ProposalSource
     proposal: LLMProposal
@@ -294,15 +337,19 @@ class DecisionIn(BaseModel):
 
 
 class DecisionOut(BaseModel):
-    id: int
-    exception_id: int
-    proposal_id: int | None
+    id: int | UUID
+    exception_id: int | UUID
+    proposal_id: int | UUID | None
     action: DecisionAction
     manager_id: str
     note: str | None
     final_correction: ProposedCorrection | None
     decided_at: str
     resulting_status: ExceptionStatus
+    writeback_status: Literal["not_requested", "pending", "applied", "stale", "failed"] = (
+        "not_requested"
+    )
+    external_operation_id: str | None = None
 
 
 class TimecardOut(BaseModel):
@@ -311,7 +358,7 @@ class TimecardOut(BaseModel):
     punches: list[PunchOut]
     schedules: list[ScheduleOut]
     weekly_worked_minutes: int
-    weekly_threshold_minutes: int
+    weekly_threshold_minutes: int | None
 
 
 class ExceptionDetail(BaseModel):
@@ -321,12 +368,15 @@ class ExceptionDetail(BaseModel):
     policies: list[PolicyPassage]
     latest_proposal: ProposalOut | None
     decision: DecisionOut | None
+    source_current: bool = True
+    source_version: str | None = None
+    current_source_version: str | None = None
 
 
 class AuditEventOut(BaseModel):
     id: int
     trace_id: str
-    exception_id: int | None
+    exception_id: int | UUID | None
     seq: int
     event_type: str
     payload: dict
@@ -386,6 +436,15 @@ class HealthOut(BaseModel):
     model: str
     llm_reachable: bool
     now: LocalTs
+
+
+class ReadinessOut(BaseModel):
+    """Operational dependency checks for deployment readiness probes."""
+
+    status: Literal["ready", "not_ready"]
+    checks: dict[str, bool]
+    worker_heartbeat_age_seconds: int | None = None
+    now: datetime
 
 
 class CurrentUserOut(BaseModel):

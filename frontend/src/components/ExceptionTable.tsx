@@ -13,7 +13,7 @@ export function ExceptionTable({ exceptions }: { exceptions: ExceptionOut[] }) {
         <thead>
           <tr>
             <th scope="col">Severity</th>
-            <th scope="col">Employee</th>
+            <th scope="col">Employee / reference</th>
             <th scope="col">Work date</th>
             <th scope="col">Rule</th>
             <th scope="col">Status</th>
@@ -26,7 +26,9 @@ export function ExceptionTable({ exceptions }: { exceptions: ExceptionOut[] }) {
               <td><SeverityBadge severity={exception.severity} /></td>
               <td>
                 <strong>{exception.employee_name}</strong>
-                <small className="table-subtext">{exception.employee_id}</small>
+                {exception.employee_name === exception.employee_id
+                  ? <small className="table-subtext">Company employee reference</small>
+                  : <small className="table-subtext">{exception.employee_id}</small>}
               </td>
               <td>{formatDateShort(exception.work_date)}</td>
               <td>

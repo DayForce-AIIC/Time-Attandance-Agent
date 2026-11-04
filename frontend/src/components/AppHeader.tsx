@@ -25,12 +25,12 @@ export function AppHeader() {
       <div className="header-main">
         <NavLink to="/" className="brand" aria-label="ShiftGuard home">
           <span className="brand-mark" aria-hidden="true">S</span>
-          <span><strong>ShiftGuard</strong><small>Manager workspace</small></span>
+          <span><strong>ShiftGuard</strong><small>{auth.enabled ? "HR review workspace" : "Manager workspace"}</small></span>
         </NavLink>
         <nav aria-label="Primary navigation" className="primary-nav">
           <NavLink to="/" end>Queue</NavLink>
           <NavLink to="/assistant">Ask ShiftGuard</NavLink>
-          {!auth.enabled || currentUser.data?.role === "HR" ? <NavLink to="/metrics">Metrics</NavLink> : null}
+          {!auth.enabled ? <NavLink to="/metrics">Metrics</NavLink> : null}
         </nav>
         <div className="header-tools">
           <div className={`health-pill ${health.data?.llm_reachable ? "is-reachable" : "is-unreachable"}`} title={health.error ? "API health could not be loaded" : undefined}>

@@ -5,8 +5,9 @@ const timestamp = z
   .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
   .refine((value) => !Number.isNaN(Date.parse(value)), "Invalid local timestamp");
 const auditTimestamp = z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid audit timestamp");
+const workflowIdSchema = z.union([z.number().int(), z.string().uuid()]);
 
-export const severitySchema = z.enum(["low", "medium", "high"]);
+export const severitySchema = z.enum(["low", "medium", "high", "critical"]);
 export const exceptionStatusSchema = z.enum([
   "OPEN",
   "PENDING_REVIEW",
@@ -14,6 +15,8 @@ export const exceptionStatusSchema = z.enum([
   "RESOLVED",
   "REJECTED",
   "SUPERSEDED",
+  "WRITEBACK_PENDING",
+  "WRITEBACK_FAILED",
 ]);
 export const actionSchema = z.enum([
   "ADD_PUNCH",
@@ -68,7 +71,7 @@ export const constraintsSchema = z.object({
 });
 
 export const exceptionOutSchema = z.object({
-  id: z.number(),
+  id: workflowIdSchema,
   employee_id: z.string(),
   employee_name: z.string(),
   work_date: z.string(),
@@ -121,8 +124,8 @@ export const llmProposalSchema = z.object({
 });
 
 export const proposalOutSchema = z.object({
-  id: z.number().int(),
-  exception_id: z.number().int(),
+  id: workflowIdSchema,
+  exception_id: workflowIdSchema,
   trace_id: z.string(),
   source: z.enum(["llm", "fallback"]),
   proposal: llmProposalSchema,
@@ -136,11 +139,11 @@ export const proposalOutSchema = z.object({
 export const employeeSchema = z.object({
   id: z.string(),
   name: z.string(),
-  role: z.string(),
-  site: z.string(),
+  role: z.string().nullable().optional(),
+  site: z.string().nullable().optional(),
   jurisdiction: z.string(),
-  manager_id: z.string(),
-  ot_eligible: z.boolean(),
+  manager_id: z.string().nullable().optional(),
+  ot_eligible: z.boolean().nullable().optional(),
 });
 
 export const punchSchema = z.object({
@@ -149,7 +152,7 @@ export const punchSchema = z.object({
   work_date: z.string(),
   ts: timestamp,
   kind: punchKindSchema,
-  source: z.enum(["device", "manual", "correction"]),
+  source: z.string().nullable(),
   voided: z.boolean(),
 });
 
@@ -168,7 +171,7 @@ export const timecardSchema = z.object({
   punches: z.array(punchSchema),
   schedules: z.array(scheduleSchema),
   weekly_worked_minutes: z.number(),
-  weekly_threshold_minutes: z.number(),
+  weekly_threshold_minutes: z.number().nullable(),
 });
 
 export const policyPassageSchema = z.object({
@@ -190,18 +193,48 @@ export const assistantAnswerSchema = z.object({
   sources: z.array(assistantSourceSchema),
   model: z.string(),
   used_fallback: z.boolean(),
+  conversation_id: z.string().uuid().nullable(),
 });
 
+export const conversationSummarySchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().nullable(),
+  created_at: auditTimestamp,
+  updated_at: auditTimestamp,
+  last_message_preview: z.string().nullable(),
+});
+
+export const conversationMessageSchema = z.object({
+  id: z.string().uuid(),
+  role: z.enum(["user", "assistant"]),
+  content: z.string(),
+  model: z.string().nullable(),
+  source_references: z.array(assistantSourceSchema),
+  created_at: auditTimestamp,
+});
+
+export const conversationDetailSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().nullable(),
+  created_at: auditTimestamp,
+  updated_at: auditTimestamp,
+  messages: z.array(conversationMessageSchema),
+});
+
+export const conversationDeleteSchema = z.object({ deleted: z.boolean() });
+
 export const decisionOutSchema = z.object({
-  id: z.number().int(),
-  exception_id: z.number().int(),
-  proposal_id: z.number().int().nullable(),
+  id: workflowIdSchema,
+  exception_id: workflowIdSchema,
+  proposal_id: workflowIdSchema.nullable(),
   action: decisionActionSchema,
   manager_id: z.string(),
   note: z.string().nullable(),
   final_correction: proposedCorrectionSchema.nullable(),
   decided_at: timestamp,
   resulting_status: exceptionStatusSchema,
+  writeback_status: z.enum(["not_requested", "pending", "applied", "stale", "failed"]),
+  external_operation_id: z.string().nullable(),
 });
 
 export const exceptionDetailSchema = z.object({
@@ -211,6 +244,9 @@ export const exceptionDetailSchema = z.object({
   policies: z.array(policyPassageSchema),
   latest_proposal: proposalOutSchema.nullable(),
   decision: decisionOutSchema.nullable(),
+  source_current: z.boolean(),
+  source_version: z.string().nullable(),
+  current_source_version: z.string().nullable(),
 });
 
 export const metricsSchema = z.object({
@@ -233,7 +269,7 @@ export const metricsSchema = z.object({
 export const auditEventSchema = z.object({
   id: z.number().int(),
   trace_id: z.string(),
-  exception_id: z.number().int().nullable(),
+  exception_id: workflowIdSchema.nullable(),
   seq: z.number().int(),
   event_type: z.string(),
   payload: z.record(z.string(), z.unknown()),

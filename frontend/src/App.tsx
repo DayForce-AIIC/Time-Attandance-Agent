@@ -44,10 +44,25 @@ function ProfileGate() {
       </main>
     );
   }
+  if (currentUser.data.role !== "HR") {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card" role="alert">
+          <p className="eyebrow">HR review access</p>
+          <h1>An HR account is required</h1>
+          <p className="auth-description">This workspace is configured for HR case review. Ask an administrator to assign your HR role if you should have access.</p>
+          <button className="button button-outline" type="button" onClick={() => void auth.signOut()}>
+            Sign out
+          </button>
+        </section>
+      </main>
+    );
+  }
   return <Workspace />;
 }
 
 function Workspace() {
+  const auth = useAuth();
   return (
     <ManagerProvider>
       <BrowserRouter>
@@ -57,10 +72,10 @@ function Workspace() {
             <Route path="/" element={<QueuePage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/exceptions/:id" element={<CasePage />} />
-            <Route path="/metrics" element={<MetricsPage />} />
+            {!auth.enabled ? <Route path="/metrics" element={<MetricsPage />} /> : null}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          <footer className="app-footer"><span>ShiftGuard · Evidence-led timecard review</span><span>Suggestions always require a manager decision</span></footer>
+          <footer className="app-footer"><span>ShiftGuard · Evidence-led timecard review</span><span>Suggestions always require an {auth.enabled ? "HR" : "manager"} decision</span></footer>
         </div>
       </BrowserRouter>
     </ManagerProvider>

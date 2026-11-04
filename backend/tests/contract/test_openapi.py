@@ -167,5 +167,7 @@ def test_frozen_public_enums_and_rule_ids():
         "RESOLVED",
         "REJECTED",
         "SUPERSEDED",
+        "WRITEBACK_PENDING",
+        "WRITEBACK_FAILED",
     ]
     assert list(POLICY_RULE_IDS) == FROZEN_RULE_IDS

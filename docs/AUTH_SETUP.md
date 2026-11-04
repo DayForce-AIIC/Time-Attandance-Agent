@@ -2,9 +2,9 @@
 
 Step 2 adds email/password sign-in for provisioned HR and manager accounts. Public sign-up is not exposed. FastAPI verifies each access-token signature, issuer, audience, and expiration, then reads `organization_id`, `role`, and `manager_ref` from the server-managed `public.user_profiles` row. The browser's manager selector is used only in `AUTH_MODE=demo`; Supabase mode ignores `X-Manager-Id`.
 
-## 1. Apply the migrations
+## 1. Apply all migrations
 
-Link the repository to the Supabase project and apply both migrations as described in the [Supabase project setup](../README.md#supabase-workflow-database-foundation). The profile mapping column is added in `20261104001000_manager_profile_scope.sql` so it also applies when the original Step 1 migration was already deployed.
+Link the repository to the Supabase project and apply every file in `supabase/migrations` as described in the [Supabase project setup](../README.md#supabase-workflow-database-foundation). Keep the project schema current before starting the API or worker; the operations readiness probe also needs `20261104005000_operational_heartbeats.sql`.
 
 ## 2. Create an organization and provision users
 
@@ -28,7 +28,7 @@ insert into public.user_profiles (user_id, organization_id, role, manager_ref)
 values ('<manager-auth-user-uuid>', '<organization-uuid>', 'manager', 'm-001');
 ```
 
-`manager_ref` is server-managed and cannot be selected in the UI. It must map to an existing team in the current synthetic SQLite adapter. The company connector will replace this demo mapping with the company's manager reference in a later step. Keep `integration_service` identities out of the interactive HR interface.
+`manager_ref` is server-managed and cannot be selected in the UI. The current authenticated workspace is HR-only; a manager profile is reserved for a future manager-specific authenticated interface. Keep `integration_service` identities out of the interactive HR interface.
 
 The migration enables RLS and grants no table access to `anon` or `authenticated`; profile and workflow reads go through the backend's private PostgreSQL connection. Do not put `SUPABASE_DATABASE_URL`, a database password, or a service-role key in frontend variables.
 
@@ -43,7 +43,7 @@ SUPABASE_DATABASE_URL=postgresql://... # server-only connection string, with ssl
 AUTH_ORGANIZATION_ID=<organization-uuid>
 ```
 
-`AUTH_ORGANIZATION_ID` binds this API process to one organization while the application's attendance adapter is still SQLite. Requests from users outside that organization are rejected. Set `SUPABASE_JWT_SECRET` only if the Supabase project still signs tokens with its legacy HS256 secret; projects using asymmetric signing keys are verified against the project's JWKS endpoint.
+`AUTH_ORGANIZATION_ID` binds this API process to one organization. Requests from users outside that organization are rejected. Set `SUPABASE_JWT_SECRET` only if the Supabase project still signs tokens with its legacy HS256 secret; projects using asymmetric signing keys are verified against the project's JWKS endpoint.
 
 Create `frontend/.env.local`:
 
@@ -57,4 +57,4 @@ The publishable key is intended for browser use; it does not replace backend aut
 
 ## Current boundary
 
-Supabase mode currently protects the synthetic local review data in a single configured organization. The company API connector and PostgreSQL-backed case workflow are still future steps, so do not connect real employee data to this SQLite-backed prototype. The organization pin and team-role checks provide safe demo isolation; a shared multi-organization deployment needs the API's case repository to use the tenant-scoped PostgreSQL workflow tables before it is enabled.
+Supabase mode uses a single organization pin per API deployment. Authenticated HR review, decisions, Ask ShiftGuard history, and workflow records use PostgreSQL; current timecard evidence is fetched through the configured attendance provider. SQLite remains initialized for the separate local demo route family. Use a nonproduction company API sandbox and synthetic data for rehearsals. The production configuration gate requires Supabase Auth, explicit HTTPS CORS origins, the HTTP attendance provider, and Ollama; follow [`OPERATIONS.md`](OPERATIONS.md) before any production rollout.
