@@ -18,8 +18,11 @@ from app.config import Settings, get_settings
 from app.db import get_conn, init_db
 from app.detection import run_detection
 from app.errors import BadRequest, Forbidden, NotFound, StateConflict, ValidationFailed
+from app.integrations.factory import make_attendance_provider
+from app.integrations.routes import router as integration_router
 from app.llm.factory import make_llm_client
 from app.logging_setup import configure_logging, trace_id_var
+from app.ops_alerts import OperationalAlertReporter
 from app.policies import load_policies
 from app.schemas import ErrorOut, FaultMode
 from app.seed import seed
@@ -82,7 +85,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.book = book
     application.state.fault_mode = FaultMode.NONE
     application.state.llm = make_llm_client(runtime_settings, lambda: application.state.fault_mode)
+    application.state.attendance_provider = make_attendance_provider(runtime_settings)
+    application.state.operational_alerts = OperationalAlertReporter(runtime_settings)
     application.include_router(router)
+    application.include_router(integration_router)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=[
@@ -155,6 +161,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             503: "service_unavailable",
         }.get(exc.status_code, "http_error")
         return _error_response(exc.status_code, str(exc.detail), code)
+
+    @application.on_event("shutdown")
+    def close_attendance_provider() -> None:
+        application.state.attendance_provider.close()
 
     return application
 

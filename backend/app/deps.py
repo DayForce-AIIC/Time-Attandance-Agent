@@ -15,6 +15,8 @@ from app.clock import Clock
 from app.config import Settings
 from app.db import get_conn as open_connection
 from app.errors import Forbidden, NotFound
+from app.hr_review import HRReviewService
+from app.integrations.provider import AttendanceProvider
 from app.llm.base import LLMClient
 from app.policies import PolicyBook
 from app.workflow_repository import PostgresWorkflowRepository
@@ -151,3 +153,52 @@ def get_llm(request: Request) -> LLMClient:
 def get_book(request: Request) -> PolicyBook:
     """Return the validated policy book configured at application startup."""
     return request.app.state.book
+
+
+def get_attendance_provider(request: Request) -> AttendanceProvider:
+    """Return the company attendance connector configured at application startup."""
+    return request.app.state.attendance_provider
+
+
+def get_workflow_repository(
+    request: Request,
+) -> Generator[PostgresWorkflowRepository | None, None, None]:
+    """Open and close the durable workflow store for an authenticated request."""
+    settings: Settings = request.app.state.settings
+    if settings.auth_mode != "supabase":
+        yield None
+        return
+
+    repository: PostgresWorkflowRepository | None = None
+    try:
+        repository = PostgresWorkflowRepository.from_settings(settings)
+        yield repository
+    except PostgresError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="The ShiftGuard workflow database is temporarily unavailable",
+        ) from exc
+    finally:
+        if repository is not None:
+            repository.close()
+
+
+def get_hr_review_service(
+    request: Request,
+    principal: Principal = Depends(require_hr),
+    repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+    provider: AttendanceProvider = Depends(get_attendance_provider),
+    book: PolicyBook = Depends(get_book),
+) -> HRReviewService | None:
+    """Build HR review operations from this request's authenticated organization."""
+    if repository is None:
+        return None
+    if principal.organization_id is None:
+        raise Forbidden("HR review requires an organization profile")
+    return HRReviewService(
+        repository,
+        provider,
+        principal.organization_id,
+        book,
+        request.app.state.operational_alerts,
+    )
