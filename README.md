@@ -116,6 +116,21 @@ LLM_PROVIDER=ollama make backend
 
 See [`.env.example`](.env.example) for model, database, clock, and metrics settings.
 
+## Supabase workflow database foundation
+
+The local demo still uses SQLite and synthetic attendance fixtures. Step 0's vendor-neutral API contract is in [`docs/COMPANY_INTEGRATION_CONTRACT.md`](docs/COMPANY_INTEGRATION_CONTRACT.md). Step 1 adds a versioned Supabase migration and a PostgreSQL workflow repository for organizations, integrations, exception cases, jobs, proposals, validations, decisions, audit events, and assistant conversations. It does not create employee, punch, or schedule tables.
+
+To apply the schema to a Supabase project, install the [Supabase CLI](https://supabase.com/docs/guides/cli), authenticate, and link this repository to the project:
+
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push --dry-run --remote
+make supabase-db-push
+```
+
+Keep the server-side PostgreSQL connection string in `.env` as `SUPABASE_DATABASE_URL`; never expose it through the frontend. The current demo API remains on SQLite while the HR connector and signed-in organization context are implemented in later steps, so applying the migration alone does not switch the running demo to Supabase.
+
 ## Demo walkthrough
 
 The demo controls appear when the backend's admin demo endpoint is available. Select a fault in **LLM fault mode**, then generate a proposal for an open case. The selected mode is recorded in the audit log.

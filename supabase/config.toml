@@ -1,0 +1,15 @@
+# Supabase local-development configuration. Link this project with `supabase link`
+# before applying migrations to a hosted Supabase project.
+project_id = "shiftguard"
+
+[db]
+shadow_port = 54320
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true

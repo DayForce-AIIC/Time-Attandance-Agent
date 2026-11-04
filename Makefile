@@ -4,7 +4,7 @@ VENV_PYTHON := $(VENV)/bin/python
 ACTIVE_PYTHON := $(if $(wildcard $(VENV_PYTHON)),$(VENV_PYTHON),$(PYTHON))
 PYTHON_BIN := $(abspath $(shell command -v $(ACTIVE_PYTHON)))
 
-.PHONY: all setup seed backend frontend eval backend-ci eval-ci frontend-ci openapi test
+.PHONY: all setup seed backend frontend eval backend-ci eval-ci frontend-ci openapi test supabase-db-push
 
 all: backend-ci eval-ci frontend-ci
 
@@ -50,6 +50,9 @@ frontend-ci:
 openapi:
 	cd backend && PYTHONPATH=. $(PYTHON_BIN) scripts/export_openapi.py
 	cd frontend && npm run gen:api
+
+supabase-db-push:
+	supabase db push --remote
 
 test:
 	cd backend && PYTHONPATH=. $(PYTHON_BIN) -m pytest --cov=app --cov-report=term-missing --cov-fail-under=85

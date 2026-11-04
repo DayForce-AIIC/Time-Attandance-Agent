@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     )
 
     db_path: Path = Path("./shiftguard.db")
+    supabase_database_url: SecretStr | None = None
     demo_now: datetime | None = datetime(2025, 3, 13, 20, 0)
     llm_provider: Literal["mock", "ollama"] = "mock"
     ollama_url: str = "http://localhost:11434"
