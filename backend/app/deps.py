@@ -46,6 +46,17 @@ def current_principal(
     """Resolve demo identity locally or verify Supabase identity and profile server-side."""
     settings: Settings = request.app.state.settings
     if settings.auth_mode == "demo":
+        # API key guard for demo mode (audit fix: no auth in demo mode).
+        # Enforced only when DEMO_API_KEY is set; skipped for local-only use.
+        if settings.demo_api_key:
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                provided_key = auth_header[len("Bearer "):]
+            else:
+                provided_key = request.headers.get("X-Api-Key", "")
+            if not provided_key or provided_key != settings.demo_api_key:
+                raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
         # This selector is honored only in local demo mode. Supabase mode never
         # accepts a client-selected manager identity.
         identifier = request.headers.get("X-Manager-Id") or settings.default_manager_id

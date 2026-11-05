@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     manual_minutes_per_exception: float = Field(default=6.0, ge=0)
     review_minutes_per_exception: float = Field(default=1.0, ge=0)
 
+    # Demo-mode API key guard (audit finding: no auth in demo mode).
+    # Set to any non-empty secret to require  Authorization: Bearer <key>
+    # or  X-Api-Key: <key>  on every request when auth_mode == "demo".
+    # Leave empty to disable the check for purely local, single-developer use.
+    demo_api_key: str = ""
+
     @field_validator("demo_now")
     @classmethod
     def demo_clock_must_be_naive(cls, value: datetime | None) -> datetime | None:
