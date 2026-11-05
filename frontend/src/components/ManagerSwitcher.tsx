@@ -1,6 +1,6 @@
 import { useManager, type ManagerId } from "../context/ManagerContext";
 
-const MANAGERS: Record<ManagerId, string> = {
+export const MANAGER_NAMES: Record<ManagerId, string> = {
   "m-001": "Avery Singh",
   "m-002": "Jordan Blake",
 };
@@ -15,7 +15,7 @@ export function ManagerSwitcher() {
         value={managerId}
         onChange={(event) => setManagerId(event.target.value as ManagerId)}
       >
-        {Object.entries(MANAGERS).map(([id, name]) => (
+        {Object.entries(MANAGER_NAMES).map(([id, name]) => (
           <option key={id} value={id}>{name}</option>
         ))}
       </select>

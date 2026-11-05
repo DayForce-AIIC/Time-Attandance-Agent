@@ -3,16 +3,19 @@ import type { DecisionBody } from "../api/hooks";
 import type { DecisionOut, ExceptionOut, ProposalOut, ProposedCorrection } from "../api/schemas";
 import { ErrorBanner } from "./common";
 import { EditCorrectionForm } from "./EditCorrectionForm";
+import { SlideOver } from "./SlideOver";
 import { useAuth } from "../auth/AuthContext";
 
 export function DecisionPanel({
   exception,
   proposal,
   onDecision,
+  onApprove,
 }: {
   exception: ExceptionOut;
   proposal: ProposalOut;
   onDecision: (body: DecisionBody) => Promise<DecisionOut>;
+  onApprove?: () => Promise<unknown>;
 }) {
   const auth = useAuth();
   const [mode, setMode] = useState<"idle" | "edit" | "reject">("idle");
@@ -20,6 +23,28 @@ export function DecisionPanel({
   const [error, setError] = useState<unknown>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const escalated = proposal.proposal.proposed_correction.action === "ESCALATE";
+  // Some rules (for example an unparseable punch sequence) allow escalation only, so there is nothing to edit.
+  const editable = exception.constraints.allowed_actions.some((action) => action !== "ESCALATE");
+
+  const closeForm = () => {
+    setMode("idle");
+    setError(null);
+  };
+
+  const submitApprove = async () => {
+    if (!onApprove) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onApprove();
+      setMessage("Correction approved.");
+    } catch (cause) {
+      setError(cause);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submitCorrection = async (correction: ProposedCorrection) => {
     setError(null);
@@ -50,32 +75,58 @@ export function DecisionPanel({
   return (
     <section className="panel decision-panel" aria-labelledby="decision-heading">
       <div className="panel-heading">
-        <div><p className="eyebrow">Human decision</p><h2 id="decision-heading">Review and decide</h2></div>
+        <div><p className="eyebrow">Your decision</p><h2 id="decision-heading">Review and decide</h2></div>
         <span className="decision-required">{auth.enabled ? "HR approval required" : "Manager approval required"}</span>
       </div>
-      {error ? <ErrorBanner error={error} /> : null}
+      {error && mode === "idle" ? <ErrorBanner error={error} /> : null}
       {message ? <p className="success-note" role="status">✓ {message}</p> : null}
+
+      <div className="decision-actions">
+        {onApprove && !escalated ? (
+          <button
+            type="button"
+            className="button button-primary decision-approve"
+            onClick={() => void submitApprove()}
+            disabled={busy}
+          >
+            {busy ? "Approving…" : "Approve suggestion"}
+          </button>
+        ) : null}
+        {editable ? (
+          <button type="button" className={`button ${escalated ? "button-primary" : "button-outline"}`} onClick={() => { setError(null); setMode("edit"); }}>Edit correction</button>
+        ) : null}
+        <button type="button" className="button button-danger-outline" onClick={() => { setError(null); setMode("reject"); }}>{editable ? "Reject" : "Reject suggestion"}</button>
+      </div>
+      {escalated ? (
+        <p className="decision-hint">
+          {editable
+            ? "There is no automatic correction to approve for this case. Enter the correct time yourself, or reject the suggestion with a note."
+            : "There is no automatic correction to approve, and this rule can only be escalated. Reject the suggestion with a note to record your decision."}
+        </p>
+      ) : null}
+
       {mode === "edit" ? (
-        <EditCorrectionForm
-          exception={exception}
-          initialCorrection={proposal.proposal.proposed_correction}
-          onSubmit={submitCorrection}
-          onCancel={() => setMode("idle")}
-        />
-      ) : mode === "reject" ? (
-        <div className="reject-form">
-          <label><span>Rejection note <em>Required</em></span><textarea aria-label="Rejection note" rows={3} maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Explain why this suggestion was rejected" /></label>
-          <div className="form-actions">
-            <button type="button" className="button button-quiet" onClick={() => { setMode("idle"); setError(null); }}>Cancel</button>
-            <button type="button" className="button button-danger" onClick={() => void submitReject()} disabled={busy}>{busy ? "Rejecting…" : "Confirm rejection"}</button>
+        <SlideOver eyebrow="Your decision" title="Edit correction" closeLabel="Close editor" onClose={closeForm}>
+          <EditCorrectionForm
+            exception={exception}
+            initialCorrection={proposal.proposal.proposed_correction}
+            onSubmit={submitCorrection}
+            onCancel={closeForm}
+          />
+        </SlideOver>
+      ) : null}
+      {mode === "reject" ? (
+        <SlideOver eyebrow="Your decision" title="Reject suggestion" closeLabel="Close" onClose={closeForm}>
+          {error ? <ErrorBanner error={error} /> : null}
+          <div className="reject-form">
+            <label><span>Rejection note <em>Required</em></span><textarea aria-label="Rejection note" rows={4} maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Explain why this suggestion was rejected" /></label>
+            <div className="form-actions">
+              <button type="button" className="button button-quiet" onClick={closeForm}>Cancel</button>
+              <button type="button" className="button button-danger" onClick={() => void submitReject()} disabled={busy}>{busy ? "Rejecting…" : "Confirm rejection"}</button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="decision-actions">
-          <button type="button" className="button button-outline" onClick={() => { setError(null); setMode("edit"); }}>Edit correction</button>
-          <button type="button" className="button button-danger-outline" onClick={() => { setError(null); setMode("reject"); }}>Reject</button>
-        </div>
-      )}
+        </SlideOver>
+      ) : null}
     </section>
   );
 }

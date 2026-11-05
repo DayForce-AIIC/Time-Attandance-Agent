@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAssistantConversation, useAssistantConversations, useAssistantQuery, useDeleteAssistantConversation, useHealth } from "../api/hooks";
 import type { z } from "zod";
 import { assistantAnswerSchema, conversationMessageSchema } from "../api/schemas";
 import { useAuth } from "../auth/AuthContext";
+import { AnswerCard, Composer, ConversationSidebar, UserBubble, Welcome } from "../components/AssistantParts";
 import { ErrorBanner, PageHeading } from "../components/common";
+import { IconPlus } from "../components/icons";
 
+import { BRAND } from "../brand";
 type AssistantAnswer = z.infer<typeof assistantAnswerSchema>;
 type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 type DisplayMessage = ConversationMessage & { localId?: string };
@@ -45,10 +48,10 @@ export function AssistantPage() {
   );
   const availabilityMessage = !health.data
     ? health.error
-      ? "Could not confirm Ollama availability. Ask ShiftGuard is disabled until the backend health check succeeds."
+      ? `Could not confirm Ollama availability. Ask ${BRAND.name} is disabled until the backend health check succeeds.`
       : "Checking Ollama availability…"
     : health.data.provider !== "ollama"
-      ? "Ask ShiftGuard requires Ollama and is disabled while the backend is in mock mode. Set LLM_PROVIDER=ollama and restart the backend."
+      ? `Ask ${BRAND.name} requires Ollama and is disabled while the backend is in mock mode. Set LLM_PROVIDER=ollama and restart the backend.`
       : !health.data.llm_reachable
         ? `Ollama or the configured model (${health.data.model}) is unavailable. Start Ollama and make sure the model is installed.`
         : null;
@@ -160,8 +163,11 @@ export function AssistantPage() {
   );
   useEffect(() => {
     const thread = threadRef.current;
-    if (thread && shouldAutoScroll.current) thread.scrollTop = thread.scrollHeight;
-  }, [messages, selectedId, streamingTurn?.answer, streamingTurn?.complete]);
+    if (!thread) return;
+    // Follow new answers, but keep the welcome screen scrolled to its top.
+    if (messages.length === 0 && !streamingTurn) thread.scrollTop = 0;
+    else if (shouldAutoScroll.current) thread.scrollTop = thread.scrollHeight;
+  }, [messages, selectedId, streamingTurn]);
 
   const streamingTurnIsSaved = Boolean(
     streamingTurn?.complete
@@ -187,75 +193,45 @@ export function AssistantPage() {
     });
   };
 
+  const hasConversation = messages.length > 0 || Boolean(visibleStreamingTurn);
+  const savedConversationLoading = Boolean(auth.enabled && selectedId && conversation.isLoading && !visibleStreamingTurn);
+  const scopeNote = auth.enabled
+    ? "Questions use this organization’s saved attendance evidence and retrieved policies."
+    : "Questions are limited to the selected manager’s team and retrieved attendance policies.";
+
   return (
     <main className="page-shell assistant-page">
-      <PageHeading eyebrow="Read-only attendance assistant" title="Ask ShiftGuard" />
-      <p className="assistant-intro">
-        Ask about your organization’s attendance cases or company policy. Answers include the records and policy passages used.
-        The assistant cannot change timecards or approve decisions.
-      </p>
+      <PageHeading
+        eyebrow="Read-only assistant"
+        title={`Ask ${BRAND.name}`}
+        subtitle="Ask about attendance cases or company policy. Every answer cites the records and policy passages it used."
+      >
+        {!auth.enabled && hasConversation ? (
+          <button className="button button-outline" disabled={assistant.isPending} onClick={startNewConversation} type="button"><IconPlus /> New chat</button>
+        ) : null}
+      </PageHeading>
 
       <div className={`assistant-layout ${auth.enabled ? "has-history" : ""}`}>
         {auth.enabled ? (
-          <aside className="panel assistant-history" aria-label="Saved conversations">
-            <div className="assistant-history-heading">
-              <div><span>HR workspace</span><h2>Your conversations</h2></div>
-              <button className="button button-primary" disabled={assistant.isPending} onClick={startNewConversation} type="button">New chat</button>
-            </div>
-            {conversations.isLoading ? <p className="assistant-history-empty">Loading saved chats…</p> : null}
-            {conversations.error ? <ErrorBanner error={conversations.error} /> : null}
-            {conversations.data?.length ? (
-              <div className="assistant-history-list">
-                {conversations.data.map((item) => (
-                  <div className={`assistant-history-item ${item.id === selectedId ? "is-selected" : ""}`} key={item.id}>
-                    <button
-                      className="assistant-history-open"
-                      aria-current={item.id === selectedId ? "page" : undefined}
-                      disabled={assistant.isPending}
-                      onClick={() => { setStreamingTurn(null); shouldAutoScroll.current = true; setSearchParams({ conversation: item.id }); assistant.reset(); }}
-                      type="button"
-                    >
-                      <strong>{item.title || "Untitled conversation"}</strong>
-                      <span>{item.last_message_preview || "No messages"}</span>
-                      <small>{new Date(item.updated_at).toLocaleString()}</small>
-                    </button>
-                    <button
-                      aria-label={`Delete ${item.title || "conversation"}`}
-                      className="assistant-history-delete"
-                      disabled={deleteConversation.isPending || assistant.isPending}
-                      onClick={() => deleteSavedConversation(item.id, item.title)}
-                      type="button"
-                    >×</button>
-                  </div>
-                ))}
-              </div>
-            ) : !conversations.isLoading && !conversations.error ? (
-              <p className="assistant-history-empty">Saved chats will appear here.</p>
-            ) : null}
-            <p className="assistant-retention-note">Chats are private to your HR account and organization. They remain saved until you delete them.</p>
-          </aside>
+          <ConversationSidebar
+            items={conversations.data}
+            loading={conversations.isLoading}
+            errorNode={conversations.error ? <ErrorBanner error={conversations.error} /> : null}
+            selectedId={selectedId}
+            busy={assistant.isPending || deleteConversation.isPending}
+            onNew={startNewConversation}
+            onOpen={(id) => { setStreamingTurn(null); shouldAutoScroll.current = true; setSearchParams({ conversation: id }); assistant.reset(); }}
+            onDelete={deleteSavedConversation}
+          />
         ) : null}
 
-        <section className="panel assistant-panel" aria-label="Attendance questions">
+        <section className="assistant-panel" aria-label="Attendance questions">
           {availabilityMessage ? (
             <div className="assistant-availability" role="status" aria-live="polite">
-              {availabilityMessage}
+              <strong>Assistant unavailable</strong>
+              <p>{availabilityMessage}</p>
             </div>
           ) : null}
-          <div className="assistant-quick-questions">
-            <span>Try a question</span>
-            {QUICK_QUESTIONS.map((prompt) => (
-              <button
-                className="assistant-chip"
-                disabled={assistant.isPending || !assistantReady}
-                key={prompt}
-                onClick={() => ask(prompt)}
-                type="button"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
 
           <div
             className="assistant-thread"
@@ -265,109 +241,56 @@ export function AssistantPage() {
             }}
             ref={threadRef}
           >
-          {assistant.error ? (
-            <ErrorBanner error={assistant.error} onRetry={() => ask(question)} />
-          ) : null}
-          {auth.enabled && selectedId && conversation.isLoading && !visibleStreamingTurn ? (
-            <div className="assistant-empty" role="status">Loading saved conversation…</div>
-          ) : null}
-          {auth.enabled && conversation.error ? <ErrorBanner error={conversation.error} /> : null}
+            {assistant.error ? <ErrorBanner error={assistant.error} onRetry={() => ask(question)} /> : null}
+            {savedConversationLoading ? <div className="assistant-empty" role="status">Loading saved conversation…</div> : null}
+            {auth.enabled && conversation.error ? <ErrorBanner error={conversation.error} /> : null}
 
-          {messages.length === 0 && !visibleStreamingTurn && !(auth.enabled && selectedId && conversation.isLoading) ? (
-            <div className="assistant-empty">
-              <strong>{selectedId && auth.enabled ? "This conversation has no messages." : "Answers stay tied to evidence."}</strong>
-              <span>ShiftGuard does not infer why an employee was absent or make attendance decisions.</span>
-            </div>
-          ) : (
-            <div aria-live="polite" className="assistant-conversation">
-              {messages.map((message) => message.role === "user" ? (
-                <div className="assistant-question-bubble" key={message.id || message.localId}>
-                  <span>You asked</span>
-                  <p>{message.content}</p>
-                </div>
-              ) : (
-                <article className="assistant-answer" key={message.id || message.localId}>
-                  <div className="assistant-answer-heading">
-                    <strong>ShiftGuard</strong>
-                    <span>{message.model ? `Source: ${message.model}` : "Evidence-only answer"}</span>
-                  </div>
-                  <p>{message.content}</p>
-                  {message.source_references.length ? (
-                    <div className="assistant-sources">
-                      <h2>Sources</h2>
-                      {message.source_references.map((source) => (
-                        <section className="assistant-source" key={source.source_id}>
-                          <div className="assistant-source-heading">
-                            <span className={`source-badge source-${source.kind}`}>{source.kind}</span>
-                            {source.href ? <Link to={source.href}>{source.label} ↗</Link> : <strong>{source.label}</strong>}
-                          </div>
-                          <p>{source.excerpt}</p>
-                        </section>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-              {visibleStreamingTurn ? (
-                <>
-                  <div className="assistant-question-bubble" key="streaming-question">
-                    <span>You asked</span>
-                    <p>{visibleStreamingTurn.question}</p>
-                  </div>
-                  <article
-                    aria-live="polite"
-                    className={`assistant-answer ${visibleStreamingTurn.complete ? "" : "assistant-answer-streaming"}`}
-                    key="streaming-answer"
-                  >
-                    <div className="assistant-answer-heading">
-                      <strong>ShiftGuard</strong>
-                      <span>{visibleStreamingTurn.complete
-                        ? visibleStreamingTurn.model ? `Source: ${visibleStreamingTurn.model}` : "Evidence-based answer"
-                        : visibleStreamingTurn.answer ? "Streaming answer…" : visibleStreamingTurn.status}</span>
-                    </div>
-                    <p>{visibleStreamingTurn.answer || visibleStreamingTurn.status}</p>
-                    {visibleStreamingTurn.warning ? (
-                      <small className="assistant-save-warning">{visibleStreamingTurn.warning}</small>
-                    ) : null}
-                    {visibleStreamingTurn.sources.length ? (
-                      <div className="assistant-sources">
-                        <h2>Sources</h2>
-                        {visibleStreamingTurn.sources.map((source) => (
-                          <section className="assistant-source" key={source.source_id}>
-                            <div className="assistant-source-heading">
-                              <span className={`source-badge source-${source.kind}`}>{source.kind}</span>
-                              {source.href ? <Link to={source.href}>{source.label} ↗</Link> : <strong>{source.label}</strong>}
-                            </div>
-                            <p>{source.excerpt}</p>
-                          </section>
-                        ))}
-                      </div>
-                    ) : null}
-                  </article>
-                </>
-              ) : null}
-            </div>
-          )}
+            {!hasConversation && !savedConversationLoading ? (
+              <Welcome
+                prompts={QUICK_QUESTIONS}
+                disabled={assistant.isPending || !assistantReady}
+                onAsk={ask}
+                empty={Boolean(selectedId && auth.enabled)}
+              />
+            ) : hasConversation ? (
+              <div aria-live="polite" className="assistant-conversation">
+                {messages.map((message) => message.role === "user" ? (
+                  <UserBubble key={message.id || message.localId}>{message.content}</UserBubble>
+                ) : (
+                  <AnswerCard
+                    key={message.id || message.localId}
+                    content={message.content}
+                    label={message.model ?? "Evidence-only answer"}
+                    sources={message.source_references}
+                  />
+                ))}
+                {visibleStreamingTurn ? (
+                  <>
+                    <UserBubble>{visibleStreamingTurn.question}</UserBubble>
+                    <AnswerCard
+                      content={visibleStreamingTurn.answer}
+                      status={visibleStreamingTurn.status}
+                      streaming={!visibleStreamingTurn.complete}
+                      label={visibleStreamingTurn.complete
+                        ? visibleStreamingTurn.model ?? "Evidence-based answer"
+                        : visibleStreamingTurn.answer ? "Writing…" : "Thinking…"}
+                      warning={visibleStreamingTurn.warning}
+                      sources={visibleStreamingTurn.sources}
+                    />
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
-          <form className="assistant-form" onSubmit={submit}>
-            <label htmlFor="assistant-question">Your question</label>
-            <div className="assistant-input-row">
-              <input
-                autoComplete="off"
-                disabled={!assistantReady || assistant.isPending}
-                id="assistant-question"
-                maxLength={500}
-                onChange={(event) => setQuestion(event.target.value)}
-                placeholder="For example: What policy applies to meal breaks?"
-                value={question}
-              />
-              <button className="button button-primary" disabled={!question.trim() || assistant.isPending || !assistantReady} type="submit">
-                {assistant.isPending ? "Streaming…" : "Ask"}
-              </button>
-            </div>
-            <small>{auth.enabled ? "Questions use this organization’s saved attendance evidence and retrieved policies." : "Questions are limited to the selected manager’s team and retrieved attendance policies."}</small>
-          </form>
+          <Composer
+            value={question}
+            onChange={setQuestion}
+            onSubmit={submit}
+            disabled={!assistantReady}
+            pending={assistant.isPending}
+            scopeNote={scopeNote}
+          />
         </section>
       </div>
     </main>

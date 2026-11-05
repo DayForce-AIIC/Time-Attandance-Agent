@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 import {
   useArchiveOrganizationPolicy,
   useCreateOrganizationPolicy,
@@ -11,9 +11,46 @@ import type {
   OrganizationPolicyUpdate,
   Severity,
 } from "../api/schemas";
-import { EmptyState, ErrorBanner, LoadingState, PageHeading } from "../components/common";
+import { BRAND } from "../brand";
+import { ErrorBanner, LoadingState, PageHeading, SeverityBadge } from "../components/common";
+import { IconArchive, IconEdit, IconInfo, IconPlus, IconRestore, IconSearch } from "../components/icons";
+import { PolicyDrawer } from "../components/PolicyDrawer";
 
-const severityOptions: Severity[] = ["low", "medium", "high", "critical"];
+type Tab = "rules" | "company";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  punch: "Punches",
+  break: "Breaks",
+  overtime: "Overtime",
+  schedule: "Schedule",
+  rest: "Rest periods",
+  days: "Consecutive days",
+  company: "Company",
+};
+const MAX_SCOPE_CHIPS = 6;
+
+function categoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] ?? category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+function formatDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+// Same order as the built-in rule book: punches, then breaks, overtime, schedule, rest and days.
+const RULE_ORDER = [
+  "PUNCH-01", "PUNCH-02", "PUNCH-03", "PUNCH-04", "PUNCH-99", "MAX-01", "BRK-01", "BRK-02",
+  "OT-01", "OT-02", "OT-03", "SCHED-01", "SCHED-02", "REST-01", "DAY-01",
+];
+const ruleRank = (policy: OrganizationPolicy) => {
+  const index = RULE_ORDER.indexOf(policy.rule_id ?? policy.policy_id);
+  return index === -1 ? RULE_ORDER.length : index;
+};
+const byRule = (a: OrganizationPolicy, b: OrganizationPolicy) =>
+  ruleRank(a) - ruleRank(b)
+  || (a.rule_id ?? a.policy_id).localeCompare(b.rule_id ?? b.policy_id, undefined, { numeric: true });
 
 export function PoliciesPage() {
   const policies = useOrganizationPolicies();
@@ -21,17 +58,32 @@ export function PoliciesPage() {
   const update = useUpdateOrganizationPolicy();
   const archive = useArchiveOrganizationPolicy();
   const [editing, setEditing] = useState<OrganizationPolicy | "new" | null>(null);
+  const [tab, setTab] = useState<Tab>("rules");
+  const [search, setSearch] = useState("");
+  const [severity, setSeverity] = useState<"" | Severity>("");
+  const [ruleStatus, setRuleStatus] = useState<"" | "enabled" | "disabled">("");
+  const [companyStatus, setCompanyStatus] = useState<"active" | "archived" | "all">("active");
+
+  const data = policies.data;
+  const standards = useMemo(() => (data ?? []).filter((policy) => policy.kind === "standard").sort(byRule), [data]);
+  const company = useMemo(() => (data ?? []).filter((policy) => policy.kind === "custom"), [data]);
 
   if (policies.isLoading) return <main className="page-shell"><LoadingState label="Loading company policies…" /></main>;
-  if (policies.isError || !policies.data) {
+  if (policies.isError || !data) {
     return <main className="page-shell"><PageHeading eyebrow="HR configuration" title="Policies" /><ErrorBanner error={policies.error} onRetry={() => void policies.refetch()} /></main>;
   }
 
-  const standards = policies.data.filter((policy) => policy.kind === "standard");
-  const companyPolicies = policies.data.filter((policy) => policy.kind === "custom");
-  const activeCompanyPolicies = companyPolicies.filter((policy) => policy.is_active);
-  const archivedCompanyPolicies = companyPolicies.filter((policy) => !policy.is_active);
+  const query = search.trim().toLowerCase();
+  const matches = (policy: OrganizationPolicy) => !query
+    || [policy.title, policy.text, policy.rule_id ?? "", policy.category].some((value) => value.toLowerCase().includes(query));
+  const visibleRules = standards.filter((policy) => matches(policy)
+    && (!severity || policy.severity === severity)
+    && (ruleStatus === "" || (ruleStatus === "enabled") === policy.is_active));
+  const visibleCompany = company.filter((policy) => matches(policy)
+    && (companyStatus === "all" || (companyStatus === "active") === policy.is_active));
+
   const editorError = create.error ?? update.error;
+  const filtersActive = Boolean(query || severity || ruleStatus);
 
   async function savePolicy(input: { policy: OrganizationPolicy | "new"; body: OrganizationPolicyCreate | OrganizationPolicyUpdate }) {
     if (input.policy === "new") {
@@ -51,153 +103,181 @@ export function PoliciesPage() {
     }
   }
 
+  function clearFilters() {
+    setSearch("");
+    setSeverity("");
+    setRuleStatus("");
+  }
+
   return (
     <main className="page-shell policies-page">
-      <PageHeading eyebrow="HR configuration" title="Attendance policies">
-        <button type="button" className="button button-primary" onClick={() => setEditing("new")}>
-          + Add company policy
-        </button>
+      <PageHeading
+        eyebrow="HR configuration"
+        title="Attendance policies"
+        subtitle="Choose which rules detect exceptions, and add company guidance for the AI analysis and the assistant."
+      >
+        <button type="button" className="button button-primary" onClick={() => setEditing("new")}><IconPlus /> Add company policy</button>
       </PageHeading>
 
-      <section className="policy-explainer" aria-label="Policy behavior">
-        <strong>How policies are used</strong>
-        <p>Enabling a built-in rule and changing its severity affect detection. Edited wording and company policies provide context to analysis and Ask ShiftGuard. Built-in thresholds and detector logic stay fixed; added guidance does not create a new automated detector.</p>
+      <p className="policy-callout">
+        <IconInfo />
+        <span>Enabling a rule and changing its severity affect detection. Edited wording and company policies give context to analysis and Ask {BRAND.name}. Built-in thresholds and detector logic stay fixed, and added guidance never creates a new automated detector.</span>
+      </p>
+
+      {archive.error ? <ErrorBanner error={archive.error} /> : null}
+
+      <section className="panel policy-main" aria-label="Policy library">
+        <div className="policy-tabs" role="tablist" aria-label="Policy type">
+          <button type="button" role="tab" id="tab-rules" aria-selected={tab === "rules"} aria-controls="panel-rules" className="policy-tab" onClick={() => setTab("rules")}>
+            Built-in rules <span className="count-chip">{standards.length}</span>
+          </button>
+          <button type="button" role="tab" id="tab-company" aria-selected={tab === "company"} aria-controls="panel-company" className="policy-tab" onClick={() => setTab("company")}>
+            Company policies <span className="count-chip">{company.length}</span>
+          </button>
+        </div>
+
+        <div className="policy-toolbar">
+          <div className="search-field">
+            <IconSearch />
+            <input type="search" placeholder={tab === "rules" ? "Search rules by name, code or wording…" : "Search company policies…"} aria-label="Search policies" value={search} onChange={(event) => setSearch(event.target.value)} />
+          </div>
+          {tab === "rules" ? (
+            <>
+              <select aria-label="Filter by severity" value={severity} onChange={(event) => setSeverity(event.target.value as "" | Severity)}>
+                <option value="">All severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <select aria-label="Filter by status" value={ruleStatus} onChange={(event) => setRuleStatus(event.target.value as "" | "enabled" | "disabled")}>
+                <option value="">Enabled and disabled</option>
+                <option value="enabled">Enabled only</option>
+                <option value="disabled">Disabled only</option>
+              </select>
+            </>
+          ) : (
+            <select aria-label="Filter company policies" value={companyStatus} onChange={(event) => setCompanyStatus(event.target.value as "active" | "archived" | "all")}>
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+              <option value="all">All</option>
+            </select>
+          )}
+          <span className="policy-toolbar-count">
+            {tab === "rules" ? `${visibleRules.length} of ${standards.length} rules` : `${visibleCompany.length} of ${company.length} policies`}
+          </span>
+        </div>
+
+        {tab === "rules" ? (
+          <div id="panel-rules" role="tabpanel" aria-labelledby="tab-rules">
+            {visibleRules.length ? (
+              <div className="table-scroll">
+                <table className="data-table policy-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Rule</th>
+                      <th scope="col">Severity</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Revision</th>
+                      <th scope="col"><span className="visually-hidden">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRules.map((policy) => (
+                      <tr key={policy.policy_id} className={policy.is_active ? "" : "is-disabled"} onClick={() => setEditing(policy)}>
+                        <td>
+                          <div className="policy-rule-cell">
+                            <span className="rule-code">{policy.rule_id}</span>
+                            <div className="policy-rule-body">
+                              <div className="policy-rule-title">
+                                <strong>{policy.title}</strong>
+                                <span className="category-tag">{categoryLabel(policy.category)}</span>
+                              </div>
+                              <p className="policy-rule-text">{policy.text}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{policy.severity ? <SeverityBadge severity={policy.severity} /> : "—"}</td>
+                        <td><span className={`policy-state ${policy.is_active ? "is-active" : ""}`}>{policy.is_active ? "Enabled" : "Disabled"}</span></td>
+                        <td className="mono">r{policy.revision}</td>
+                        <td className="cell-action">
+                          <button type="button" className="button button-outline" onClick={(event) => { event.stopPropagation(); setEditing(policy); }}><IconEdit /> Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-mark" aria-hidden="true">?</div>
+                <h2>No rules match your filters</h2>
+                <p>Try a different search, or clear the filters to see every rule.</p>
+                {filtersActive ? <button type="button" className="button button-outline" onClick={clearFilters}>Clear filters</button> : null}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div id="panel-company" role="tabpanel" aria-labelledby="tab-company">
+            {visibleCompany.length ? (
+              <div className="company-grid">
+                {visibleCompany.map((policy) => (
+                  <article className={`company-policy${policy.is_active ? "" : " is-archived"}`} key={policy.policy_id} id={`policy-${policy.policy_id}`}>
+                    <header>
+                      <h3>{policy.title}</h3>
+                      <span className={`policy-state ${policy.is_active ? "is-active" : ""}`}>{policy.is_active ? "Active" : "Archived"}</span>
+                    </header>
+                    <p className="company-policy-text">{policy.text}</p>
+                    <div className="company-policy-scope">
+                      <span>Applies to</span>
+                      {policy.applies_to_rule_ids.length ? (
+                        <>
+                          {policy.applies_to_rule_ids.slice(0, MAX_SCOPE_CHIPS).map((ruleId) => <span className="rule-chip" key={ruleId}>{ruleId}</span>)}
+                          {policy.applies_to_rule_ids.length > MAX_SCOPE_CHIPS
+                            ? <span className="rule-chip is-general">+{policy.applies_to_rule_ids.length - MAX_SCOPE_CHIPS} more</span>
+                            : null}
+                        </>
+                      ) : <span className="rule-chip is-general">All attendance topics</span>}
+                    </div>
+                    <footer>
+                      <small>Updated {formatDate(policy.updated_at)} · r{policy.revision}</small>
+                      <div className="company-policy-actions">
+                        <button type="button" className="button button-outline" onClick={() => setEditing(policy)}>
+                          {policy.is_active ? <><IconEdit /> Edit</> : <><IconRestore /> Edit / restore</>}
+                        </button>
+                        {policy.is_active ? (
+                          <button type="button" className="button button-danger-outline" onClick={() => archivePolicy(policy)}><IconArchive /> Archive</button>
+                        ) : null}
+                      </div>
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-mark" aria-hidden="true">+</div>
+                <h2>{company.length ? "No policies in this view" : "No company policies yet"}</h2>
+                <p>{company.length
+                  ? "Switch the filter above to see active or archived policies."
+                  : `Add local guidance to give the analyzer and Ask ${BRAND.name} organization-specific context.`}</p>
+                {!company.length ? <button type="button" className="button button-primary" onClick={() => setEditing("new")}><IconPlus /> Add company policy</button> : null}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
-      {editorError ? <ErrorBanner error={editorError} /> : null}
-      {archive.error ? <ErrorBanner error={archive.error} /> : null}
       {editing ? (
-        <PolicyEditor
+        <PolicyDrawer
           key={editing === "new" ? "new-policy" : editing.policy_id}
           policy={editing === "new" ? undefined : editing}
           rules={standards}
           busy={create.isPending || update.isPending}
+          error={editorError}
           onCancel={() => setEditing(null)}
           onSave={(body) => savePolicy({ policy: editing, body })}
         />
       ) : null}
-
-      <section className="policy-section" aria-labelledby="implemented-rules-heading">
-        <div className="policy-section-heading">
-          <div><p className="eyebrow">15 built-in rules</p><h2 id="implemented-rules-heading">Implemented attendance rules</h2></div>
-          <span className="count-chip">{standards.filter((rule) => rule.is_active).length} active</span>
-        </div>
-        <div className="organization-policy-grid">
-          {standards.map((policy) => (
-            <PolicyCard key={policy.policy_id} policy={policy} onEdit={() => setEditing(policy)} />
-          ))}
-        </div>
-      </section>
-
-      <section className="policy-section" aria-labelledby="company-policies-heading">
-        <div className="policy-section-heading">
-          <div><p className="eyebrow">AI reference material</p><h2 id="company-policies-heading">Company policies</h2></div>
-          <span className="count-chip">{activeCompanyPolicies.length} active</span>
-        </div>
-        {activeCompanyPolicies.length ? (
-          <div className="organization-policy-grid">
-            {activeCompanyPolicies.map((policy) => (
-              <PolicyCard key={policy.policy_id} policy={policy} onEdit={() => setEditing(policy)} onArchive={() => archivePolicy(policy)} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="No company policies added" detail="Add local guidance to give the analyzer and Ask ShiftGuard organization-specific context." />
-        )}
-        {archivedCompanyPolicies.length ? (
-          <details className="archived-policies">
-            <summary>Archived policies ({archivedCompanyPolicies.length})</summary>
-            <div className="organization-policy-grid">
-              {archivedCompanyPolicies.map((policy) => (
-                <PolicyCard key={policy.policy_id} policy={policy} onEdit={() => setEditing(policy)} />
-              ))}
-            </div>
-          </details>
-        ) : null}
-      </section>
     </main>
-  );
-}
-
-function PolicyCard({ policy, onEdit, onArchive }: {
-  policy: OrganizationPolicy;
-  onEdit: () => void;
-  onArchive?: () => void;
-}) {
-  const active = policy.is_active;
-  return (
-    <article className={`organization-policy-card ${active ? "" : "is-inactive"}`} id={`policy-${policy.policy_id}`}>
-      <div className="organization-policy-card-heading">
-        <div>
-          <span className="rule-code">{policy.rule_id ?? "COMPANY POLICY"}</span>
-          <span className={`policy-state ${active ? "is-active" : ""}`}>{active ? "Active" : policy.kind === "custom" ? "Archived" : "Disabled"}</span>
-        </div>
-        <span className="policy-revision">r{policy.revision}</span>
-      </div>
-      <h3>{policy.title}</h3>
-      <p className="organization-policy-text">{policy.text}</p>
-      <div className="organization-policy-meta">
-        {policy.severity ? <span className={`severity-badge severity-${policy.severity}`}>{policy.severity} severity</span> : <span className="source-badge source-policy">AI reference</span>}
-        {policy.kind === "custom" ? (
-          <span>{policy.applies_to_rule_ids.length ? `Applies to ${policy.applies_to_rule_ids.join(", ")}` : "Applies across attendance topics"}</span>
-        ) : <span>{policy.category}</span>}
-      </div>
-      <div className="organization-policy-actions">
-        <button type="button" className="button button-outline" onClick={onEdit}>{policy.kind === "custom" && !active ? "Edit / restore" : "Edit"}</button>
-        {onArchive ? <button type="button" className="button button-danger-outline" onClick={onArchive}>Archive</button> : null}
-      </div>
-    </article>
-  );
-}
-
-function PolicyEditor({ policy, rules, busy, onCancel, onSave }: {
-  policy?: OrganizationPolicy;
-  rules: OrganizationPolicy[];
-  busy: boolean;
-  onCancel: () => void;
-  onSave: (body: OrganizationPolicyCreate | OrganizationPolicyUpdate) => Promise<void>;
-}) {
-  const [title, setTitle] = useState(policy?.title ?? "");
-  const [text, setText] = useState(policy?.text ?? "");
-  const [severity, setSeverity] = useState<Severity>(policy?.severity ?? "medium");
-  const [active, setActive] = useState(policy?.is_active ?? true);
-  const [appliesTo, setAppliesTo] = useState<string[]>(policy?.applies_to_rule_ids ?? []);
-  const isStandard = policy?.kind === "standard";
-
-  function toggleRule(ruleId: string) {
-    setAppliesTo((current) => current.includes(ruleId)
-      ? current.filter((id) => id !== ruleId)
-      : [...current, ruleId]);
-  }
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      if (policy?.kind === "standard") {
-        await onSave({ title, text, severity, is_active: active });
-      } else if (policy) {
-        await onSave({ title, text, is_active: active, applies_to_rule_ids: appliesTo });
-      } else {
-        await onSave({ title, text, applies_to_rule_ids: appliesTo });
-      }
-    } catch {
-      // The owning page renders the mutation's API error above the editor.
-    }
-  }
-
-  return (
-    <section className="policy-editor panel" aria-labelledby="policy-editor-title">
-      <div className="panel-heading"><div><p className="eyebrow">{policy ? "Policy revision" : "New company guidance"}</p><h2 id="policy-editor-title">{policy ? `Edit ${policy.rule_id ?? "company policy"}` : "Add a company policy"}</h2></div><button type="button" className="icon-button" aria-label="Close policy editor" onClick={onCancel}>×</button></div>
-      <form className="policy-editor-form" onSubmit={(event) => void submit(event)}>
-        <label>Policy title<input required minLength={3} maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-        <label>Policy guidance<textarea required minLength={20} maxLength={12000} rows={5} value={text} onChange={(event) => setText(event.target.value)} /><small>Use clear rules and relevant exceptions. This text is supplied to the AI as policy context.</small></label>
-        {isStandard ? (
-          <label>Severity<select value={severity} onChange={(event) => setSeverity(event.target.value as Severity)}>{severityOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-        ) : (
-          <fieldset className="policy-rule-picker"><legend>Applies to implemented rules</legend><p>Leave all unchecked to make this a general attendance policy.</p><div>{rules.map((rule) => <label key={rule.policy_id}><input type="checkbox" checked={appliesTo.includes(rule.policy_id)} onChange={() => toggleRule(rule.policy_id)} /><span>{rule.policy_id} · {rule.title}</span></label>)}</div></fieldset>
-        )}
-        {policy ? <label className="policy-active-toggle"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />{isStandard ? "Rule is enabled for automated detection" : "Policy is active for AI retrieval"}</label> : null}
-        <div className="policy-editor-actions"><button type="button" className="button button-outline" onClick={onCancel}>Cancel</button><button type="submit" className="button button-primary" disabled={busy}>{busy ? "Saving…" : "Save policy"}</button></div>
-      </form>
-    </section>
   );
 }

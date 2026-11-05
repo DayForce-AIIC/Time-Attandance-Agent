@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 
+import { BRAND } from "../brand";
+import { BrandMark } from "../components/BrandMark";
 export function LoginPage() {
   const { signIn, configured } = useAuth();
   const [email, setEmail] = useState("");
@@ -15,7 +17,7 @@ export function LoginPage() {
     try {
       await signIn(email.trim(), password);
     } catch {
-      setError("Sign-in failed. Check your credentials or contact your ShiftGuard administrator.");
+      setError(`Sign-in failed. Check your credentials or contact your ${BRAND.name} administrator.`);
     } finally {
       setSubmitting(false);
     }
@@ -24,10 +26,10 @@ export function LoginPage() {
   return (
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="login-title">
-        <div className="auth-brand-mark" aria-hidden="true">S</div>
+        <BrandMark className="auth-brand-mark" />
         <p className="eyebrow">HR workspace</p>
-        <h1 id="login-title">Sign in to ShiftGuard</h1>
-        <p className="auth-description">Use the account provided by your ShiftGuard administrator.</p>
+        <h1 id="login-title">Sign in to {BRAND.name}</h1>
+        <p className="auth-description">Use the account provided by your {BRAND.name} administrator.</p>
         {!configured ? (
           <div className="auth-error" role="alert">
             Supabase Auth is selected, but the frontend project URL or publishable key is missing.

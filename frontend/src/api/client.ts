@@ -2,6 +2,7 @@ import { z } from "zod";
 import { errorOutSchema, type CheckResult } from "./schemas";
 import { getSupabaseAccessToken, supabaseAuthEnabled } from "../auth/client";
 
+import { BRAND } from "../brand";
 const MANAGER_STORAGE_KEY = "shiftguard.managerId";
 const DEFAULT_MANAGER_ID = "m-001";
 let activeManagerId = readStoredManager();
@@ -181,7 +182,7 @@ export async function apiStream<TSchema extends z.ZodTypeAny>(
       const detail =
         typeof data === "object" && data !== null && "detail" in data && typeof data.detail === "string"
           ? data.detail
-          : "ShiftGuard could not complete that request.";
+          : `${BRAND.name} could not complete that request.`;
       throw new ApiError(502, detail, "assistant_stream_error");
     }
     if (event === "complete") finalData = data;
@@ -206,7 +207,7 @@ export async function apiStream<TSchema extends z.ZodTypeAny>(
   }
 
   if (finalData === undefined) {
-    throw new ApiError(502, "The answer stream ended before ShiftGuard completed the response.", "incomplete_stream");
+    throw new ApiError(502, `The answer stream ended before ${BRAND.name} completed the response.`, "incomplete_stream");
   }
   const parsed = schema.safeParse(finalData);
   if (!parsed.success) {

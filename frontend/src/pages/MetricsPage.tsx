@@ -25,7 +25,7 @@ export function MetricsPage() {
 
   return (
     <main className="page-shell metrics-page">
-      <PageHeading eyebrow="Operations overview" title="Workflow metrics">
+      <PageHeading eyebrow="Operations overview" title="Workflow metrics" subtitle="Operational efficiency, decision telemetry, and audit-chain integrity.">
         <span className="updated-pill"><span className="health-dot" aria-hidden="true" /> Live from API</span>
       </PageHeading>
       <section className="metric-grid" aria-label="Key workflow metrics">

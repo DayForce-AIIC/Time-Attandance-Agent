@@ -2,7 +2,11 @@ import { NavLink } from "react-router-dom";
 import { useCurrentUser, useDetect, useHealth, useLlmMode, useResetDemo, useSetLlmMode } from "../api/hooks";
 import type { FaultMode } from "../api/schemas";
 import { useAuth } from "../auth/AuthContext";
+import { BRAND } from "../brand";
+import { BrandMark } from "./BrandMark";
+import { HealthStatus, type HealthState } from "./HealthStatus";
 import { ManagerSwitcher } from "./ManagerSwitcher";
+import { UserMenu } from "./UserMenu";
 import { ErrorBanner } from "./common";
 
 const FAULT_MODES: { value: FaultMode; label: string }[] = [
@@ -20,30 +24,32 @@ export function AppHeader() {
   const currentUser = useCurrentUser(auth.enabled);
   const health = useHealth();
   const llmMode = useLlmMode(!auth.enabled);
+  const email = currentUser.data?.email ?? "Signed in";
+  const healthState: HealthState = health.data
+    ? (health.data.llm_reachable ? "reachable" : "unreachable")
+    : health.error ? "unreachable" : "checking";
   return (
     <header className="app-header">
       <div className="header-main">
-        <NavLink to="/" className="brand" aria-label="ShiftGuard home">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span><strong>ShiftGuard</strong><small>{auth.enabled ? "HR review workspace" : "Manager workspace"}</small></span>
+        <NavLink to="/" className="brand" aria-label={`${BRAND.name} home`}>
+          <BrandMark />
+          <span><strong>{BRAND.name}</strong><small>{auth.enabled ? "HR review workspace" : "Manager workspace"}</small></span>
         </NavLink>
         <nav aria-label="Primary navigation" className="primary-nav">
           <NavLink to="/" end>Queue</NavLink>
-          <NavLink to="/assistant">Ask ShiftGuard</NavLink>
+          <NavLink to="/assistant">Ask {BRAND.name}</NavLink>
           {auth.enabled ? <NavLink to="/policies">Policies</NavLink> : null}
           {!auth.enabled ? <NavLink to="/metrics">Metrics</NavLink> : null}
         </nav>
         <div className="header-tools">
-          <div className={`health-pill ${health.data?.llm_reachable ? "is-reachable" : "is-unreachable"}`} title={health.error ? "API health could not be loaded" : undefined}>
-            <span className="health-dot" aria-hidden="true" />
-            <span>{health.data ? `${health.data.provider} / ${health.data.model}` : "API status loading"}</span>
-            <span className="health-state">{health.data?.llm_reachable ? "reachable" : health.data ? "unreachable" : "checking"}</span>
-          </div>
+          <HealthStatus
+            provider={health.data?.provider}
+            model={health.data?.model}
+            state={healthState}
+            title={health.error ? "API health could not be loaded" : undefined}
+          />
           {auth.enabled ? (
-            <div className="authenticated-user">
-              <span>{currentUser.data?.email ?? "Signed in"}<small>{currentUser.data?.role ?? ""}</small></span>
-              <button type="button" className="button button-quiet" onClick={() => void auth.signOut()}>Sign out</button>
-            </div>
+            <UserMenu email={email} role={currentUser.data?.role ?? ""} onSignOut={() => void auth.signOut()} />
           ) : <ManagerSwitcher />}
         </div>
       </div>
@@ -65,26 +71,28 @@ function DemoControls({ initialMode }: { initialMode: FaultMode }) {
   };
 
   return (
-    <div className="demo-controls">
-      <div className="demo-controls-label"><span className="demo-kicker">LIVE DEMO</span><span>Fault simulation</span></div>
-      <label className="visually-hidden" htmlFor="fault-mode">LLM fault mode</label>
-      <select
-        id="fault-mode"
-        aria-label="LLM fault mode"
-        value={mode.data?.mode ?? initialMode}
-        onChange={(event) => setMode.mutate(event.target.value as FaultMode)}
-        disabled={busy}
-      >
-        {FAULT_MODES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-      </select>
-      <button type="button" className="button button-quiet" onClick={() => detect.mutate()} disabled={busy}>
-        {detect.isPending ? "Checking…" : "↻ Re-run detection"}
-      </button>
-      <button type="button" className="button button-quiet" onClick={resetDemo} disabled={busy}>
-        {reset.isPending ? "Resetting…" : "Reset demo data"}
-      </button>
-      {error ? <ErrorBanner error={error} onRetry={() => { setMode.reset(); detect.reset(); reset.reset(); }} /> : null}
-      {detect.isSuccess ? <span className="sr-only" role="status">Detection complete: {detect.data.created} new exceptions.</span> : null}
+    <div className="demo-bar">
+      <div className="demo-controls">
+        <div className="demo-controls-label"><span className="demo-kicker">LIVE DEMO</span><span>Fault simulation</span></div>
+        <label className="visually-hidden" htmlFor="fault-mode">LLM fault mode</label>
+        <select
+          id="fault-mode"
+          aria-label="LLM fault mode"
+          value={mode.data?.mode ?? initialMode}
+          onChange={(event) => setMode.mutate(event.target.value as FaultMode)}
+          disabled={busy}
+        >
+          {FAULT_MODES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+        <button type="button" className="button button-quiet" onClick={() => detect.mutate()} disabled={busy}>
+          {detect.isPending ? "Checking…" : "↻ Re-run detection"}
+        </button>
+        <button type="button" className="button button-quiet" onClick={resetDemo} disabled={busy}>
+          {reset.isPending ? "Resetting…" : "Reset demo data"}
+        </button>
+        {error ? <ErrorBanner error={error} onRetry={() => { setMode.reset(); detect.reset(); reset.reset(); }} /> : null}
+        {detect.isSuccess ? <span className="sr-only" role="status">Detection complete: {detect.data.created} new exceptions.</span> : null}
+      </div>
     </div>
   );
 }
