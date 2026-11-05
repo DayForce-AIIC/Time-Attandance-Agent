@@ -7,6 +7,11 @@
 
 ShiftGuard is a university innovation challenge prototype. It uses synthetic attendance data by default and does not calculate payroll. A real company integration, production credentials, deployment host, and operational policies must be supplied by the organization before production use.
 
+## Project presentation
+
+- [PowerPoint deck](<docs/DayForce TMA.pptx>)
+- [Canva presentation](https://canva.link/6j834q19yh2nrhb)
+
 ## Product problem
 
 HR and timekeeping teams often have to compare punches, schedules, local attendance rules, and source-system history by hand when a timecard looks wrong. That review takes time, and an automatic correction can create payroll or compliance risk if it misses context. ShiftGuard is intended to reduce the manual work of finding and investigating exceptions while keeping the correction decision with an authorized person.
