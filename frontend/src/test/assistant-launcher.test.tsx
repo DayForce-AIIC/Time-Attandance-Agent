@@ -23,14 +23,14 @@ describe("AssistantLauncher", () => {
 
   it("is a link to the Ask page and shows it is ready when the model is reachable", async () => {
     const { container } = renderLauncher({ status: "ok", provider: "ollama", model: "qwen2.5:3b-instruct", llm_reachable: true, now: "2026-11-05T17:00" });
-    const link = screen.getByRole("link", { name: "Ask TimeLedger" });
+    const link = screen.getByRole("link", { name: "Ask ShiftGuard" });
     expect(link).toHaveAttribute("href", "/assistant");
     await vi.waitFor(() => expect(container.querySelector(".assistant-launcher.is-ready")).not.toBeNull());
   });
 
   it("stays a working link but is not marked ready while the model is down", async () => {
     const { container } = renderLauncher({ status: "ok", provider: "ollama", model: "qwen2.5:3b-instruct", llm_reachable: false, now: "2026-11-05T17:00" });
-    expect(screen.getByRole("link", { name: "Ask TimeLedger" })).toHaveAttribute("href", "/assistant");
+    expect(screen.getByRole("link", { name: "Ask ShiftGuard" })).toHaveAttribute("href", "/assistant");
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(container.querySelector(".assistant-launcher.is-ready")).toBeNull();
   });

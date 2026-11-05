@@ -4,7 +4,7 @@
  * (also update the <title> fallback in frontend/index.html).
  */
 export const BRAND = {
-  name: "TimeLedger",
+  name: "ShiftGuard",
   tagline: "Evidence-led attendance review",
-  documentTitle: "TimeLedger · Attendance exception review",
+  documentTitle: "ShiftGuard · Attendance exception review",
 } as const;
