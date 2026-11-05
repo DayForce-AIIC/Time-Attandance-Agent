@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -14,7 +16,7 @@ from fastapi.responses import JSONResponse
 
 from app.api import router
 from app.clock import Clock
-from app.config import Settings, get_settings
+from app.config import Settings, get_settings, validate_production_config
 from app.db import get_conn, init_db
 from app.detection import run_detection
 from app.errors import BadRequest, Forbidden, NotFound, StateConflict, ValidationFailed
@@ -24,6 +26,7 @@ from app.llm.factory import make_llm_client
 from app.logging_setup import configure_logging, trace_id_var
 from app.ops_alerts import OperationalAlertReporter
 from app.policies import load_policies
+from app.rate_limits import SlidingWindowRateLimiter, client_rate_limit_key, route_rate_limit
 from app.schemas import ErrorOut, FaultMode
 from app.seed import seed
 
@@ -40,6 +43,10 @@ DESCRIPTION = (
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create a fully configured ShiftGuard API application."""
     runtime_settings = settings or get_settings()
+
+    # Enforce production configuration gate before anything else starts.
+    validate_production_config(runtime_settings)
+
     if runtime_settings.auth_mode == "supabase":
         missing_auth_settings = []
         if not runtime_settings.supabase_url or not runtime_settings.supabase_url.strip():
@@ -71,10 +78,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn.close()
         raise
 
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+        yield
+        _app.state.attendance_provider.close()
+
     application = FastAPI(
         title="ShiftGuard API",
         version="1.0.0",
         description=DESCRIPTION,
+        lifespan=lifespan,
     )
     application.state.settings = runtime_settings
     application.state.db_path = db_path
@@ -84,6 +97,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         conn.close()
     application.state.book = book
     application.state.fault_mode = FaultMode.NONE
+    application.state.rate_limiter = SlidingWindowRateLimiter(
+        window_seconds=runtime_settings.rate_limit_window_seconds
+    )
     application.state.llm = make_llm_client(runtime_settings, lambda: application.state.fault_mode)
     application.state.attendance_provider = make_attendance_provider(runtime_settings)
     application.state.operational_alerts = OperationalAlertReporter(runtime_settings)
@@ -104,6 +120,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
         context_token = trace_id_var.set(request_id)
         started = time.perf_counter()
+
+        # Rate limiting — check before processing the request.
+        limit_target = route_rate_limit(request, request.app.state.settings)
+        if limit_target is not None:
+            group, limit = limit_target
+            key = client_rate_limit_key(request, group)
+            allowed, retry_after = request.app.state.rate_limiter.allow(key, limit)
+            if not allowed:
+                trace_id_var.reset(context_token)
+                body = ErrorOut(detail="rate limit exceeded", code="rate_limited")
+                response = JSONResponse(
+                    status_code=429,
+                    content=body.model_dump(mode="json"),
+                    headers={"Retry-After": str(retry_after)},
+                )
+                response.headers["X-Request-ID"] = request_id
+                return response
+
         try:
             response = await call_next(request)
         finally:
@@ -161,10 +195,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             503: "service_unavailable",
         }.get(exc.status_code, "http_error")
         return _error_response(exc.status_code, str(exc.detail), code)
-
-    @application.on_event("shutdown")
-    def close_attendance_provider() -> None:
-        application.state.attendance_provider.close()
 
     return application
 

@@ -160,6 +160,11 @@ def propose(
                     proposal, validation = validate_proposal("LLM unavailable", record, ctx)
                     last_feedback = "LLM unavailable"
                 else:
+                    # Audit fix (#5): store a hash of raw output, not the text itself,
+                    # to avoid retaining employee notes or attendance evidence in the log.
+                    raw_output_hash = hashlib.sha256(
+                        llm_result.raw_text.encode("utf-8")
+                    ).hexdigest()
                     append_event(
                         conn,
                         trace_id,
@@ -170,7 +175,7 @@ def propose(
                             "latency_ms": llm_result.latency_ms,
                             "prompt_tokens": llm_result.prompt_tokens,
                             "completion_tokens": llm_result.completion_tokens,
-                            "raw_output": llm_result.raw_text,
+                            "raw_output_hash": raw_output_hash,
                         },
                         exception_id=exc_id,
                     )
@@ -285,6 +290,8 @@ def _audit_prompt(
     bundle: PromptBundle,
     attempt: int,
 ) -> None:
+    # Audit fix (#5): store only the hash of the prompt, not the full text,
+    # to avoid retaining attendance evidence and employee notes in the audit log.
     prompt_hash = hashlib.sha256(f"{bundle.system}\n{bundle.user}".encode("utf-8")).hexdigest()
     append_event(
         conn,
@@ -293,8 +300,6 @@ def _audit_prompt(
         {
             "attempt": attempt,
             "prompt_hash": prompt_hash,
-            "system": bundle.system,
-            "user": bundle.user,
         },
         exception_id=exception_id,
     )

@@ -53,7 +53,7 @@ def route_rate_limit(request: Request, settings: Settings) -> tuple[str, int] | 
     if request.method != "POST":
         return None
     path = request.url.path
-    if path == "/api/v1/assistant/query":
+    if path in ("/api/v1/assistant/query", "/api/v1/assistant/query/stream"):
         return "assistant", settings.assistant_rate_limit_per_window
     if path == "/integrations/v1/events/attendance-changed":
         return "webhook", settings.webhook_rate_limit_per_window
