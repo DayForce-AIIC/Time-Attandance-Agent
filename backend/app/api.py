@@ -379,16 +379,30 @@ def assistant_query_stream(
                 publish("error", {"detail": "ShiftGuard could not complete that request."})
 
         worker = asyncio.create_task(asyncio.to_thread(work))
-        while True:
-            try:
-                event_name, payload = await asyncio.wait_for(event_queue.get(), timeout=15)
-            except TimeoutError:
-                yield ": keep-alive\n\n"
-                continue
-            yield _assistant_stream_event(event_name, payload)
-            if event_name in {"complete", "error"}:
-                await worker
-                break
+        try:
+            while True:
+                try:
+                    event_name, payload = await asyncio.wait_for(event_queue.get(), timeout=15)
+                except TimeoutError:
+                    yield ": keep-alive\n\n"
+                    continue
+                yield _assistant_stream_event(event_name, payload)
+                if event_name in {"complete", "error"}:
+                    await worker
+                    break
+        finally:
+            # A client may close the stream before the blocking assistant thread
+            # finishes. Keep request-scoped SQLite/PostgreSQL resources alive until
+            # that thread stops using them; cancelling asyncio.to_thread() cannot
+            # stop its underlying worker thread.
+            was_cancelled = False
+            while not worker.done():
+                try:
+                    await asyncio.shield(worker)
+                except asyncio.CancelledError:
+                    was_cancelled = True
+            if was_cancelled:
+                raise asyncio.CancelledError
 
     return StreamingResponse(
         event_stream(),
