@@ -30,6 +30,7 @@ export function AppHeader() {
         <nav aria-label="Primary navigation" className="primary-nav">
           <NavLink to="/" end>Queue</NavLink>
           <NavLink to="/assistant">Ask ShiftGuard</NavLink>
+          {auth.enabled ? <NavLink to="/policies">Policies</NavLink> : null}
           {!auth.enabled ? <NavLink to="/metrics">Metrics</NavLink> : null}
         </nav>
         <div className="header-tools">

@@ -50,4 +50,5 @@ export const fallbackProposal: ProposalOut = {
   model: "mock",
   latency_ms: 0,
   created_at: "2025-03-13T20:00",
+  policy_snapshot: [],
 };

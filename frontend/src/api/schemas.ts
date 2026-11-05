@@ -139,6 +139,12 @@ export const proposalOutSchema = z.object({
   model: z.string(),
   latency_ms: z.number(),
   created_at: timestamp,
+  policy_snapshot: z.array(z.object({
+    policy_id: z.string(),
+    title: z.string(),
+    text: z.string(),
+    revision: z.number().int().nullable(),
+  })).default([]),
 });
 
 export const employeeSchema = z.object({
@@ -227,6 +233,32 @@ export const conversationDetailSchema = z.object({
 });
 
 export const conversationDeleteSchema = z.object({ deleted: z.boolean() });
+
+export const organizationPolicySchema = z.object({
+  policy_id: z.string(),
+  kind: z.enum(["standard", "custom"]),
+  rule_id: z.string().nullable(),
+  category: z.string(),
+  title: z.string(),
+  text: z.string(),
+  severity: severitySchema.nullable(),
+  applies_to_rule_ids: z.array(z.string()),
+  is_active: z.boolean(),
+  revision: z.number().int(),
+  updated_at: auditTimestamp,
+  archived_at: auditTimestamp.nullable(),
+});
+export const organizationPolicyListSchema = z.array(organizationPolicySchema);
+export type OrganizationPolicy = z.infer<typeof organizationPolicySchema>;
+export type OrganizationPolicyCreate = {
+  title: string;
+  text: string;
+  applies_to_rule_ids: string[];
+};
+export type OrganizationPolicyUpdate = Partial<OrganizationPolicyCreate> & {
+  severity?: z.infer<typeof severitySchema>;
+  is_active?: boolean;
+};
 
 export const decisionOutSchema = z.object({
   id: workflowIdSchema,

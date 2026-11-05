@@ -13,11 +13,12 @@ def _require_timezone(value: datetime) -> datetime:
 
 
 class AttendanceSourceReference(BaseModel):
-    """Opaque company record identifiers and source version from a webhook."""
+    """Company record identifiers, optional display name, and source version."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     employee_ref: str = Field(min_length=1, max_length=200)
+    employee_name: str | None = Field(default=None, min_length=1, max_length=200)
     record_type: Literal["timecard_day"]
     record_ref: str = Field(min_length=1, max_length=200)
     version: str = Field(min_length=1, max_length=200)
@@ -84,12 +85,13 @@ class LeaveEvidence(BaseModel):
 
 
 class AttendanceRecord(BaseModel):
-    """Normalized, case-scoped evidence fetched from the company system."""
+    """Normalized case evidence and optional employee display name from the company system."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     record_ref: str = Field(min_length=1, max_length=200)
     employee_ref: str = Field(min_length=1, max_length=200)
+    employee_name: str | None = Field(default=None, min_length=1, max_length=200)
     version: str = Field(min_length=1, max_length=200)
     updated_at: datetime
     work_date: date

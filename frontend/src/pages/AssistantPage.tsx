@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAssistantConversation, useAssistantConversations, useAssistantQuery, useDeleteAssistantConversation, useHealth } from "../api/hooks";
 import type { z } from "zod";
@@ -9,6 +9,16 @@ import { ErrorBanner, PageHeading } from "../components/common";
 type AssistantAnswer = z.infer<typeof assistantAnswerSchema>;
 type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 type DisplayMessage = ConversationMessage & { localId?: string };
+type StreamingTurn = {
+  question: string;
+  answer: string;
+  status: string;
+  sources: AssistantAnswer["sources"];
+  model: string | null;
+  complete: boolean;
+  conversationId: string | null;
+  warning: string | null;
+};
 
 const QUICK_QUESTIONS = [
   "Which employees have open overtime risks?",
@@ -22,6 +32,9 @@ export function AssistantPage() {
   const selectedId = searchParams.get("conversation");
   const [question, setQuestion] = useState("");
   const [demoMessages, setDemoMessages] = useState<DisplayMessage[]>([]);
+  const [streamingTurn, setStreamingTurn] = useState<StreamingTurn | null>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScroll = useRef(true);
   const assistant = useAssistantQuery();
   const conversations = useAssistantConversations(auth.enabled);
   const conversation = useAssistantConversation(selectedId, auth.enabled);
@@ -43,6 +56,8 @@ export function AssistantPage() {
   const startNewConversation = () => {
     setSearchParams({}, { replace: false });
     setDemoMessages([]);
+    setStreamingTurn(null);
+    shouldAutoScroll.current = true;
     assistant.reset();
     setQuestion("");
   };
@@ -50,15 +65,87 @@ export function AssistantPage() {
   const ask = (value: string) => {
     const cleaned = value.trim();
     if (!cleaned || assistant.isPending || !assistantReady) return;
-    assistant.mutate({ question: cleaned, conversation_id: selectedId }, {
+    shouldAutoScroll.current = true;
+    setStreamingTurn({
+      question: cleaned,
+      answer: "",
+      status: "Reviewing records and policies…",
+      sources: [],
+      model: null,
+      complete: false,
+      conversationId: selectedId,
+      warning: null,
+    });
+    assistant.mutate({
+      question: cleaned,
+      conversation_id: selectedId,
+      onEvent: (event) => {
+        if (event.event === "status" && typeof event.data === "object" && event.data !== null) {
+          const message = "message" in event.data && typeof event.data.message === "string"
+            ? event.data.message
+            : "Reviewing records and policies…";
+          setStreamingTurn((current) => current ? { ...current, status: message } : current);
+        } else if (event.event === "token" && typeof event.data === "object" && event.data !== null) {
+          const text = "text" in event.data && typeof event.data.text === "string" ? event.data.text : "";
+          setStreamingTurn((current) => current ? { ...current, answer: current.answer + text } : current);
+        } else if (event.event === "reset") {
+          setStreamingTurn((current) => current ? { ...current, answer: "", sources: [], complete: false } : current);
+        } else if (event.event === "conversation" && typeof event.data === "object" && event.data !== null) {
+          const id = "conversation_id" in event.data && typeof event.data.conversation_id === "string"
+            ? event.data.conversation_id
+            : null;
+          if (id) setStreamingTurn((current) => current ? { ...current, conversationId: id } : current);
+        } else if ((event.event === "answer" || event.event === "complete") && typeof event.data === "object") {
+          const parsed = assistantAnswerSchema.safeParse(event.data);
+          if (parsed.success) {
+            setStreamingTurn((current) => current ? {
+              ...current,
+              answer: parsed.data.answer,
+              status: "",
+              sources: parsed.data.sources,
+              model: parsed.data.model,
+              complete: true,
+              conversationId: parsed.data.conversation_id ?? current.conversationId,
+            } : current);
+          }
+        } else if (event.event === "save_error" && typeof event.data === "object" && event.data !== null) {
+          const detail = "detail" in event.data && typeof event.data.detail === "string"
+            ? event.data.detail
+            : "The answer couldn't be saved to chat history.";
+          setStreamingTurn((current) => current ? { ...current, warning: detail } : current);
+        }
+      },
+    }, {
       onSuccess: (result) => {
         setQuestion("");
         if (result.conversation_id) {
+          setStreamingTurn((current) => ({
+            question: current?.question ?? cleaned,
+            answer: result.answer,
+            status: "",
+            sources: result.sources,
+            model: result.model,
+            complete: true,
+            conversationId: result.conversation_id,
+            warning: current?.warning ?? null,
+          }));
           setSearchParams({ conversation: result.conversation_id });
+        } else if (auth.enabled) {
+          setStreamingTurn((current) => current ? {
+            ...current,
+            answer: result.answer,
+            status: "",
+            sources: result.sources,
+            model: result.model,
+            complete: true,
+            warning: current.warning ?? "This answer is visible but wasn't saved to chat history.",
+          } : current);
         } else {
+          setStreamingTurn(null);
           setDemoMessages((previous) => [...previous, ...demoTurn(cleaned, result)]);
         }
       },
+      onError: () => setStreamingTurn(null),
     });
   };
 
@@ -67,9 +154,29 @@ export function AssistantPage() {
     ask(question);
   };
 
-  const messages: DisplayMessage[] = auth.enabled
-    ? conversation.data?.messages ?? []
-    : demoMessages;
+  const messages = useMemo<DisplayMessage[]>(
+    () => auth.enabled ? conversation.data?.messages ?? [] : demoMessages,
+    [auth.enabled, conversation.data?.messages, demoMessages],
+  );
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (thread && shouldAutoScroll.current) thread.scrollTop = thread.scrollHeight;
+  }, [messages, selectedId, streamingTurn?.answer, streamingTurn?.complete]);
+
+  const streamingTurnIsSaved = Boolean(
+    streamingTurn?.complete
+    && streamingTurn.conversationId
+    && conversation.data?.messages.some((message, index, allMessages) =>
+      message.role === "assistant"
+      && message.content === streamingTurn.answer
+      && allMessages[index - 1]?.role === "user"
+      && allMessages[index - 1]?.content === streamingTurn.question
+    ),
+  );
+  const visibleStreamingTurn = streamingTurnIsSaved
+    || Boolean(selectedId && streamingTurn?.conversationId && selectedId !== streamingTurn.conversationId)
+    ? null
+    : streamingTurn;
 
   const deleteSavedConversation = (id: string, title: string | null) => {
     if (!window.confirm(`Delete “${title || "Untitled conversation"}” and its saved messages?`)) return;
@@ -105,7 +212,7 @@ export function AssistantPage() {
                       className="assistant-history-open"
                       aria-current={item.id === selectedId ? "page" : undefined}
                       disabled={assistant.isPending}
-                      onClick={() => { setSearchParams({ conversation: item.id }); assistant.reset(); }}
+                      onClick={() => { setStreamingTurn(null); shouldAutoScroll.current = true; setSearchParams({ conversation: item.id }); assistant.reset(); }}
                       type="button"
                     >
                       <strong>{item.title || "Untitled conversation"}</strong>
@@ -150,34 +257,23 @@ export function AssistantPage() {
             ))}
           </div>
 
-          <form className="assistant-form" onSubmit={submit}>
-            <label htmlFor="assistant-question">Your question</label>
-            <div className="assistant-input-row">
-              <input
-                autoComplete="off"
-                disabled={!assistantReady || assistant.isPending}
-                id="assistant-question"
-                maxLength={500}
-                onChange={(event) => setQuestion(event.target.value)}
-                placeholder="For example: What policy applies to meal breaks?"
-                value={question}
-              />
-              <button className="button button-primary" disabled={!question.trim() || assistant.isPending || !assistantReady} type="submit">
-                {assistant.isPending ? "Asking Ollama…" : "Ask"}
-              </button>
-            </div>
-            <small>{auth.enabled ? "Questions use this organization’s saved attendance evidence and retrieved policies." : "Questions are limited to the selected manager’s team and retrieved attendance policies."}</small>
-          </form>
-
+          <div
+            className="assistant-thread"
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              shouldAutoScroll.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
+            }}
+            ref={threadRef}
+          >
           {assistant.error ? (
             <ErrorBanner error={assistant.error} onRetry={() => ask(question)} />
           ) : null}
-          {auth.enabled && selectedId && conversation.isLoading ? (
+          {auth.enabled && selectedId && conversation.isLoading && !visibleStreamingTurn ? (
             <div className="assistant-empty" role="status">Loading saved conversation…</div>
           ) : null}
           {auth.enabled && conversation.error ? <ErrorBanner error={conversation.error} /> : null}
 
-          {messages.length === 0 && !(auth.enabled && selectedId && conversation.isLoading) ? (
+          {messages.length === 0 && !visibleStreamingTurn && !(auth.enabled && selectedId && conversation.isLoading) ? (
             <div className="assistant-empty">
               <strong>{selectedId && auth.enabled ? "This conversation has no messages." : "Answers stay tied to evidence."}</strong>
               <span>ShiftGuard does not infer why an employee was absent or make attendance decisions.</span>
@@ -212,8 +308,66 @@ export function AssistantPage() {
                   ) : null}
                 </article>
               ))}
+              {visibleStreamingTurn ? (
+                <>
+                  <div className="assistant-question-bubble" key="streaming-question">
+                    <span>You asked</span>
+                    <p>{visibleStreamingTurn.question}</p>
+                  </div>
+                  <article
+                    aria-live="polite"
+                    className={`assistant-answer ${visibleStreamingTurn.complete ? "" : "assistant-answer-streaming"}`}
+                    key="streaming-answer"
+                  >
+                    <div className="assistant-answer-heading">
+                      <strong>ShiftGuard</strong>
+                      <span>{visibleStreamingTurn.complete
+                        ? visibleStreamingTurn.model ? `Source: ${visibleStreamingTurn.model}` : "Evidence-based answer"
+                        : visibleStreamingTurn.answer ? "Streaming answer…" : visibleStreamingTurn.status}</span>
+                    </div>
+                    <p>{visibleStreamingTurn.answer || visibleStreamingTurn.status}</p>
+                    {visibleStreamingTurn.warning ? (
+                      <small className="assistant-save-warning">{visibleStreamingTurn.warning}</small>
+                    ) : null}
+                    {visibleStreamingTurn.sources.length ? (
+                      <div className="assistant-sources">
+                        <h2>Sources</h2>
+                        {visibleStreamingTurn.sources.map((source) => (
+                          <section className="assistant-source" key={source.source_id}>
+                            <div className="assistant-source-heading">
+                              <span className={`source-badge source-${source.kind}`}>{source.kind}</span>
+                              {source.href ? <Link to={source.href}>{source.label} ↗</Link> : <strong>{source.label}</strong>}
+                            </div>
+                            <p>{source.excerpt}</p>
+                          </section>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                </>
+              ) : null}
             </div>
           )}
+          </div>
+
+          <form className="assistant-form" onSubmit={submit}>
+            <label htmlFor="assistant-question">Your question</label>
+            <div className="assistant-input-row">
+              <input
+                autoComplete="off"
+                disabled={!assistantReady || assistant.isPending}
+                id="assistant-question"
+                maxLength={500}
+                onChange={(event) => setQuestion(event.target.value)}
+                placeholder="For example: What policy applies to meal breaks?"
+                value={question}
+              />
+              <button className="button button-primary" disabled={!question.trim() || assistant.isPending || !assistantReady} type="submit">
+                {assistant.isPending ? "Streaming…" : "Ask"}
+              </button>
+            </div>
+            <small>{auth.enabled ? "Questions use this organization’s saved attendance evidence and retrieved policies." : "Questions are limited to the selected manager’s team and retrieved attendance policies."}</small>
+          </form>
         </section>
       </div>
     </main>

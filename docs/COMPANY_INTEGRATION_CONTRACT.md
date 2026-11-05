@@ -2,7 +2,7 @@
 
 **Status:** Step 0 draft for agreement with the company that owns the HR/timekeeping system.
 
-This contract keeps the company's HR/timekeeping system as the source of truth. ShiftGuard stores workflow state and references; it does not import the employee directory or attendance history.
+This contract keeps the company's HR/timekeeping system as the source of truth. ShiftGuard stores workflow state, references, minimal evidence snapshots, and an optional employee display name supplied by the company. It does not import the employee directory or full attendance history.
 
 ## Integration shape
 
@@ -30,6 +30,7 @@ X-Company-Signature: sha256=<signature>
   "occurred_at": "2026-11-04T09:14:52Z",
   "record": {
     "employee_ref": "emp_8F39A",
+    "employee_name": "Full name supplied by the company",
     "record_type": "timecard_day",
     "record_ref": "tcday_2026-11-03_8F39A",
     "version": "17",
@@ -59,7 +60,7 @@ The same event ID may be delivered more than once. A repeated event receives `20
 The worker fetches current or version-pinned evidence by stable references. The company API should support a version token or `If-Match`/ETag so ShiftGuard can detect a record that changed after analysis.
 
 ```http
-GET /v1/attendance/records/tcday_2026-11-03_8F39A?version=17&include=punches,schedule,leave
+GET /v1/attendance/records/tcday_2026-11-03_8F39A?version=17&include=employee_name,punches,schedule,leave
 Authorization: Bearer <integration credential>
 ```
 
@@ -67,6 +68,7 @@ Authorization: Bearer <integration credential>
 {
   "record_ref": "tcday_2026-11-03_8F39A",
   "employee_ref": "emp_8F39A",
+  "employee_name": "Full name supplied by the company",
   "version": "17",
   "updated_at": "2026-11-04T09:14:52Z",
   "work_date": "2026-11-03",
@@ -87,7 +89,7 @@ Authorization: Bearer <integration credential>
 }
 ```
 
-Only fields needed to detect and explain the specific exception should be returned. The response must not include unrelated employees or attendance history. If historical versions cannot be fetched, include a stable `version` and `updated_at`; ShiftGuard will retain a minimized evidence snapshot and hash for the case.
+Only fields needed to detect and explain the specific exception should be returned. The response must not include unrelated employees or attendance history. When authorized, include the employee's current display name in `employee_name`; ShiftGuard uses it with the opaque reference when answering HR questions. If the name is omitted, the assistant identifies the employee by the exact reference rather than inventing a name. If historical versions cannot be fetched, include a stable `version` and `updated_at`; ShiftGuard will retain a minimized evidence snapshot and hash for the case.
 
 ## 3. Submit an HR-approved correction
 
@@ -139,6 +141,7 @@ The company system must reject a stale `expected_version` with `409 Conflict`; S
 
 - Webhooks, cursor feed, or both; signature algorithm, key rotation, retry window, and delivery guarantees.
 - Stable employee, timecard-day, punch, schedule, and leave identifiers and version semantics.
+- Whether the integration may return current employee display names with change events and attendance records.
 - Which records and fields may be read for a case, and how deleted/voided records appear.
 - Authoritative policies, jurisdiction identifiers, work-time zone, leave representation, and whether corrections can be submitted as applied changes or only recommendations.
 - Whether HR approval is represented by the integration identity, a company user reference, or both.

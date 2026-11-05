@@ -619,6 +619,7 @@ def detect_employee(
     schedules: list[Sched],
     as_of: datetime,
     book: PolicyBook,
+    disabled_rule_ids: frozenset[str] | set[str] = frozenset(),
 ) -> list[DetectedException]:
     """Detect all policy exceptions for one employee without mutating inputs."""
     if as_of.utcoffset() is not None:
@@ -685,7 +686,9 @@ def detect_employee(
             )
 
     suppress_weekly_risk = any(
-        finding.rule_id in {"MAX-01", "OT-03"} and start <= finding.work_date <= as_of.date()
+        finding.rule_id in {"MAX-01", "OT-03"}
+        and finding.rule_id not in disabled_rule_ids
+        and start <= finding.work_date <= as_of.date()
         for finding in detected
     )
     weekly = (
@@ -724,6 +727,8 @@ def detect_employee(
             book_rules,
         )
     )
+    if disabled_rule_ids:
+        detected = [finding for finding in detected if finding.rule_id not in disabled_rule_ids]
     return sorted(
         detected,
         key=lambda item: (item.work_date, item.rule_id, item.fingerprint),

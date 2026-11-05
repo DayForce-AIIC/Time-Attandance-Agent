@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sqlite3
+from collections.abc import AsyncIterator
 from datetime import date, datetime, timedelta, timezone
 from typing import Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from psycopg import Error as PostgresError
 
 from app import repo
@@ -24,6 +26,7 @@ from app.deps import (
     current_manager,
     current_principal,
     demo_manager,
+    get_attendance_provider,
     get_book,
     get_clock,
     get_conn,
@@ -41,8 +44,12 @@ from app.llm.base import LLMTimeout, LLMUnavailable
 from app.llm.ollama import ollama_model_is_available
 from app.logging_setup import trace_id_var
 from app.metrics import calculate_metrics
+from app.organization_policies import (
+    resolve_organization_policy_context,
+    standard_policy_row_to_output,
+)
 from app.pipeline import propose
-from app.policies import PolicyBook, all_passages, get_rule, retrieve_policies
+from app.policies import FROZEN_RULE_IDS, PolicyBook, all_passages, get_rule, retrieve_policies
 from app.schemas import (
     AssistantAnswer,
     AssistantQuestion,
@@ -67,6 +74,9 @@ from app.schemas import (
     LLMModeIn,
     LLMModeOut,
     MetricsOut,
+    OrganizationPolicyCreate,
+    OrganizationPolicyOut,
+    OrganizationPolicyUpdate,
     PolicyPassage,
     ProposalOut,
     PunchOut,
@@ -119,6 +129,7 @@ def assistant_query(
     settings: Settings = Depends(get_settings),
     principal: Principal = Depends(current_principal),
     workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+    attendance_provider=Depends(get_attendance_provider),
 ) -> AssistantAnswer:
     """Answer attendance questions only when the configured Ollama model is available."""
     if settings.llm_provider != "ollama":
@@ -170,8 +181,11 @@ def assistant_query(
                 principal.organization_id,
                 body.question.strip(),
                 llm,
-                book,
+                resolve_organization_policy_context(
+                    workflow_repository, principal.organization_id, book
+                ),
                 history,
+                attendance_provider,
             )
             request.app.state.operational_alerts.report_success("ollama")
             conversation_id = workflow_repository.persist_conversation_exchange(
@@ -198,6 +212,198 @@ def assistant_query(
             status_code=503,
             detail="Ollama did not return a valid answer. Check the model and try again.",
         ) from exc
+
+
+@router.post(
+    "/assistant/query/stream",
+    summary="Stream a manager's read-only attendance answer",
+    tags=["assistant"],
+    responses={
+        403: {"model": ErrorOut},
+        429: {"model": ErrorOut},
+        503: {"model": ErrorOut},
+    },
+)
+def assistant_query_stream(
+    body: AssistantQuestion,
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_conn),
+    manager_id: str = Depends(current_manager),
+    llm=Depends(get_llm),
+    book: PolicyBook = Depends(get_book),
+    settings: Settings = Depends(get_settings),
+    principal: Principal = Depends(current_principal),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+    attendance_provider=Depends(get_attendance_provider),
+) -> StreamingResponse:
+    """Stream answer text while preserving the normal evidence retrieval and persistence flow."""
+    if settings.llm_provider != "ollama":
+        raise HTTPException(
+            status_code=503,
+            detail="Ask ShiftGuard requires Ollama. Switch from mock mode and restart the backend.",
+        )
+    if not ollama_model_is_available(settings):
+        request.app.state.operational_alerts.report_failure(
+            "ollama",
+            "configured_model_unavailable",
+            trace_id=trace_id_var.get(),
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"The configured Ollama model '{settings.ollama_model}' is unavailable. "
+                "Start Ollama and make sure the model is installed, then try again."
+            ),
+        )
+
+    history: list[dict[str, str]] = []
+    if settings.auth_mode == "supabase":
+        if principal.role != "HR" or principal.organization_id is None:
+            raise Forbidden("HR role required")
+        if workflow_repository is None:
+            raise HTTPException(status_code=503, detail="Conversation storage is unavailable")
+        if body.conversation_id is not None:
+            if (
+                workflow_repository.get_conversation(
+                    body.conversation_id, principal.organization_id, UUID(principal.user_id)
+                )
+                is None
+            ):
+                raise NotFound("conversation was not found")
+            prior_messages = workflow_repository.list_conversation_messages(
+                body.conversation_id,
+                principal.organization_id,
+                UUID(principal.user_id),
+                limit=8,
+            )
+            history = [
+                {"role": str(message["role"]), "content": str(message["content"])[:1200]}
+                for message in prior_messages
+            ]
+
+    async def event_stream() -> AsyncIterator[str]:
+        """Run blocking retrieval/model work in a thread and forward answer deltas as SSE."""
+        yield _assistant_stream_event(
+            "status", {"message": "Reviewing current records and policies…"}
+        )
+        event_queue: asyncio.Queue[tuple[str, dict[str, object]]] = asyncio.Queue()
+        loop = asyncio.get_running_loop()
+
+        def publish(event_name: str, payload: dict[str, object]) -> None:
+            loop.call_soon_threadsafe(event_queue.put_nowait, (event_name, payload))
+
+        def work() -> None:
+            try:
+                if settings.auth_mode == "supabase":
+                    assert principal.organization_id is not None
+                    assert workflow_repository is not None
+                    user_id = UUID(principal.user_id)
+                    saved_conversation_id: UUID | None = None
+                    save_warning: str | None = None
+                    try:
+                        saved_conversation_id = workflow_repository.start_conversation_exchange(
+                            organization_id=principal.organization_id,
+                            user_id=user_id,
+                            conversation_id=body.conversation_id,
+                            title=body.question.strip(),
+                            question=body.question.strip(),
+                        )
+                        publish(
+                            "conversation",
+                            {"conversation_id": str(saved_conversation_id)},
+                        )
+                    except Exception:
+                        save_warning = "This answer may not be saved to conversation history."
+                    answer = answer_workflow_attendance_question(
+                        workflow_repository,
+                        principal.organization_id,
+                        body.question.strip(),
+                        llm,
+                        resolve_organization_policy_context(
+                            workflow_repository, principal.organization_id, book
+                        ),
+                        history,
+                        attendance_provider,
+                        on_token=lambda text: publish("token", {"text": text}),
+                        on_reset=lambda: publish("reset", {}),
+                    )
+                    request.app.state.operational_alerts.report_success("ollama")
+                    if saved_conversation_id is not None:
+                        answer = answer.model_copy(
+                            update={"conversation_id": saved_conversation_id}
+                        )
+                    publish("answer", answer.model_dump(mode="json"))
+                    if saved_conversation_id is not None:
+                        try:
+                            workflow_repository.finish_conversation_exchange(
+                                organization_id=principal.organization_id,
+                                user_id=user_id,
+                                conversation_id=saved_conversation_id,
+                                answer=answer.answer,
+                                model=answer.model,
+                                source_references=[
+                                    source.model_dump(mode="json") for source in answer.sources
+                                ],
+                            )
+                        except Exception:
+                            save_warning = (
+                                "The answer is shown, but it couldn't be saved to chat history."
+                            )
+                    if save_warning is not None:
+                        publish("save_error", {"detail": save_warning})
+                else:
+                    answer = answer_attendance_question(
+                        conn,
+                        manager_id,
+                        body.question.strip(),
+                        llm,
+                        book,
+                        on_token=lambda text: publish("token", {"text": text}),
+                        on_reset=lambda: publish("reset", {}),
+                    )
+                    request.app.state.operational_alerts.report_success("ollama")
+                publish("complete", answer.model_dump(mode="json"))
+            except (LLMTimeout, LLMUnavailable) as exc:
+                request.app.state.operational_alerts.report_failure(
+                    "ollama",
+                    "llm_timeout" if isinstance(exc, LLMTimeout) else "llm_unavailable",
+                    trace_id=trace_id_var.get(),
+                )
+                publish(
+                    "error",
+                    {
+                        "detail": "Ollama did not return a valid answer. Check the model and try again."
+                    },
+                )
+            except Exception:
+                publish("error", {"detail": "ShiftGuard could not complete that request."})
+
+        worker = asyncio.create_task(asyncio.to_thread(work))
+        while True:
+            try:
+                event_name, payload = await asyncio.wait_for(event_queue.get(), timeout=15)
+            except TimeoutError:
+                yield ": keep-alive\n\n"
+                continue
+            yield _assistant_stream_event(event_name, payload)
+            if event_name in {"complete", "error"}:
+                await worker
+                break
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+def _assistant_stream_event(event_name: str, payload: dict[str, object]) -> str:
+    """Encode one assistant update as a server-sent event frame."""
+    return f"event: {event_name}\ndata: {json.dumps(payload)}\n\n"
 
 
 @router.get(
@@ -667,6 +873,178 @@ def employee_timecard(
 
 
 @router.get(
+    "/organization/policies",
+    response_model=list[OrganizationPolicyOut],
+    summary="List organization policies and implemented rules",
+    tags=["policies"],
+)
+def list_organization_policies(
+    principal: Principal = Depends(require_hr),
+    settings: Settings = Depends(get_settings),
+    book: PolicyBook = Depends(get_book),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> list[OrganizationPolicyOut]:
+    """Return the signed-in HR user's editable, tenant-scoped policy catalog."""
+    organization_id, repository = _organization_policy_access(
+        principal, settings, workflow_repository
+    )
+    resolve_organization_policy_context(repository, organization_id, book)
+    return [
+        OrganizationPolicyOut.model_validate(standard_policy_row_to_output(row))
+        for row in repository.list_organization_policies(organization_id)
+    ]
+
+
+@router.post(
+    "/organization/policies",
+    response_model=OrganizationPolicyOut,
+    status_code=201,
+    summary="Add company-specific attendance guidance",
+    tags=["policies"],
+)
+def create_organization_policy(
+    body: OrganizationPolicyCreate,
+    principal: Principal = Depends(require_hr),
+    settings: Settings = Depends(get_settings),
+    book: PolicyBook = Depends(get_book),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> OrganizationPolicyOut:
+    """Add a company reference policy used in analysis and Ask ShiftGuard context."""
+    organization_id, repository = _organization_policy_access(
+        principal, settings, workflow_repository
+    )
+    resolve_organization_policy_context(repository, organization_id, book)
+    invalid_rule_ids = set(body.applies_to_rule_ids) - set(FROZEN_RULE_IDS)
+    if invalid_rule_ids:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown implemented rule IDs: {', '.join(sorted(invalid_rule_ids))}",
+        )
+    row = repository.create_company_policy(
+        organization_id=organization_id,
+        policy_id=f"COMPANY-{uuid4().hex[:12].upper()}",
+        title=body.title.strip(),
+        text=body.text.strip(),
+        applies_to_rule_ids=list(dict.fromkeys(body.applies_to_rule_ids)),
+        actor_id=UUID(principal.user_id),
+    )
+    return OrganizationPolicyOut.model_validate(standard_policy_row_to_output(row))
+
+
+@router.patch(
+    "/organization/policies/{policy_id}",
+    response_model=OrganizationPolicyOut,
+    summary="Edit an organization policy or implemented rule",
+    tags=["policies"],
+)
+def update_organization_policy(
+    policy_id: str,
+    body: OrganizationPolicyUpdate,
+    principal: Principal = Depends(require_hr),
+    settings: Settings = Depends(get_settings),
+    book: PolicyBook = Depends(get_book),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> OrganizationPolicyOut:
+    """Edit policy wording, enablement, severity, or custom rule applicability."""
+    organization_id, repository = _organization_policy_access(
+        principal, settings, workflow_repository
+    )
+    resolve_organization_policy_context(repository, organization_id, book)
+    current = next(
+        (
+            row
+            for row in repository.list_organization_policies(organization_id)
+            if str(row["policy_id"]) == policy_id
+        ),
+        None,
+    )
+    if current is None:
+        raise NotFound(f"policy {policy_id} was not found")
+    updates = body.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=422, detail="At least one policy field must be changed")
+    kind = str(current["kind"])
+    if kind == "standard" and "applies_to_rule_ids" in updates:
+        raise HTTPException(
+            status_code=422,
+            detail="Rule applicability is fixed for implemented rules.",
+        )
+    if kind == "custom" and "severity" in updates:
+        raise HTTPException(
+            status_code=422,
+            detail="Company guidance does not create or change detector severity.",
+        )
+    if updates.get("title") is not None:
+        updates["title"] = updates["title"].strip()
+    if updates.get("text") is not None:
+        updates["text"] = updates["text"].strip()
+    if updates.get("severity") is not None:
+        updates["severity"] = updates["severity"].value
+    if "applies_to_rule_ids" in updates:
+        if updates["applies_to_rule_ids"] is None:
+            raise HTTPException(status_code=422, detail="Rule applicability cannot be null.")
+        invalid_rule_ids = set(updates["applies_to_rule_ids"]) - set(FROZEN_RULE_IDS)
+        if invalid_rule_ids:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Unknown implemented rule IDs: {', '.join(sorted(invalid_rule_ids))}",
+            )
+        updates["applies_to_rule_ids"] = list(dict.fromkeys(updates["applies_to_rule_ids"]))
+    for field_name in ("title", "text", "severity"):
+        if field_name in updates and updates[field_name] is None:
+            raise HTTPException(status_code=422, detail=f"{field_name} cannot be null.")
+    row = repository.update_organization_policy(
+        organization_id=organization_id,
+        policy_id=policy_id,
+        updates=updates,
+        actor_id=UUID(principal.user_id),
+    )
+    if row is None:
+        raise NotFound(f"policy {policy_id} was not found")
+    return OrganizationPolicyOut.model_validate(standard_policy_row_to_output(row))
+
+
+@router.delete(
+    "/organization/policies/{policy_id}",
+    response_model=OrganizationPolicyOut,
+    summary="Archive company attendance guidance",
+    tags=["policies"],
+)
+def archive_organization_policy(
+    policy_id: str,
+    principal: Principal = Depends(require_hr),
+    settings: Settings = Depends(get_settings),
+    book: PolicyBook = Depends(get_book),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+) -> OrganizationPolicyOut:
+    """Archive custom guidance while preserving its immutable history."""
+    organization_id, repository = _organization_policy_access(
+        principal, settings, workflow_repository
+    )
+    resolve_organization_policy_context(repository, organization_id, book)
+    current = next(
+        (
+            row
+            for row in repository.list_organization_policies(organization_id)
+            if str(row["policy_id"]) == policy_id
+        ),
+        None,
+    )
+    if current is None:
+        raise NotFound(f"policy {policy_id} was not found")
+    if current["kind"] != "custom":
+        raise HTTPException(status_code=409, detail="Implemented rules cannot be deleted.")
+    row = repository.archive_company_policy(
+        organization_id=organization_id,
+        policy_id=policy_id,
+        actor_id=UUID(principal.user_id),
+    )
+    if row is None:
+        raise NotFound(f"policy {policy_id} was not found")
+    return OrganizationPolicyOut.model_validate(standard_policy_row_to_output(row))
+
+
+@router.get(
     "/policies",
     response_model=list[PolicyPassage],
     summary="List policy passages",
@@ -974,6 +1352,21 @@ def _audit_out(row: sqlite3.Row) -> AuditEventOut:
 def _require_demo_controls(settings: Settings) -> None:
     if not settings.enable_demo_controls:
         raise NotFound("demo controls are disabled")
+
+
+def _organization_policy_access(
+    principal: Principal,
+    settings: Settings,
+    repository: PostgresWorkflowRepository | None,
+) -> tuple[UUID, PostgresWorkflowRepository]:
+    """Enforce HR-authenticated organization storage for policy administration."""
+    if settings.auth_mode != "supabase" or principal.organization_id is None:
+        raise NotFound("organization policies are unavailable in demo mode")
+    if principal.role != "HR":
+        raise Forbidden("HR role required")
+    if repository is None:
+        raise HTTPException(status_code=503, detail="Organization policy storage is unavailable")
+    return principal.organization_id, repository
 
 
 def _mode_out(request: Request, settings: Settings) -> LLMModeOut:

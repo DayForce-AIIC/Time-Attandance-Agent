@@ -7,6 +7,7 @@ import { AssistantPage } from "./pages/AssistantPage";
 import { CasePage } from "./pages/CasePage";
 import { MetricsPage } from "./pages/MetricsPage";
 import { QueuePage } from "./pages/QueuePage";
+import { PoliciesPage } from "./pages/PoliciesPage";
 import { useCurrentUser } from "./api/hooks";
 
 export function App() {
@@ -71,6 +72,7 @@ function Workspace() {
           <Routes>
             <Route path="/" element={<QueuePage />} />
             <Route path="/assistant" element={<AssistantPage />} />
+            {auth.enabled ? <Route path="/policies" element={<PoliciesPage />} /> : null}
             <Route path="/exceptions/:id" element={<CasePage />} />
             {!auth.enabled ? <Route path="/metrics" element={<MetricsPage />} /> : null}
             <Route path="*" element={<Navigate to="/" replace />} />

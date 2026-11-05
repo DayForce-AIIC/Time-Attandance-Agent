@@ -74,6 +74,198 @@ class PostgresWorkflowRepository:
             (user_id,),
         ).fetchone()
 
+    def ensure_standard_policies(self, organization_id: UUID, policy_book: Any) -> None:
+        """Create the organization's editable rows from the bundled rule catalog once."""
+        with self.connection.transaction():
+            for rule in policy_book.rules:
+                row = self.connection.execute(
+                    """INSERT INTO public.organization_policies
+                       (organization_id, policy_id, kind, rule_id, category, title, text,
+                        severity, applies_to_rule_ids)
+                       VALUES (%s, %s, 'standard', %s, %s, %s, %s, %s, %s)
+                       ON CONFLICT (organization_id, policy_id) DO NOTHING
+                       RETURNING *""",
+                    (
+                        organization_id,
+                        rule.id,
+                        rule.id,
+                        rule.category,
+                        rule.title,
+                        rule.text,
+                        rule.severity.value,
+                        list(rule.related),
+                    ),
+                ).fetchone()
+                if row is not None:
+                    self._record_policy_revision(
+                        row,
+                        change_kind="created",
+                        changed_by=None,
+                    )
+
+    def list_organization_policies(self, organization_id: UUID) -> list[Row]:
+        """List policy rows and archived entries for one organization."""
+        return list(
+            self.connection.execute(
+                """SELECT * FROM public.organization_policies
+                   WHERE organization_id = %s
+                   ORDER BY CASE WHEN kind = 'standard' THEN 0 ELSE 1 END,
+                            category, policy_id""",
+                (organization_id,),
+            ).fetchall()
+        )
+
+    def create_company_policy(
+        self,
+        *,
+        organization_id: UUID,
+        policy_id: str,
+        title: str,
+        text: str,
+        applies_to_rule_ids: list[str],
+        actor_id: UUID,
+    ) -> Row:
+        """Create a custom reference policy and its immutable revision."""
+        with self.connection.transaction():
+            row = self.connection.execute(
+                """INSERT INTO public.organization_policies
+                   (organization_id, policy_id, kind, category, title, text,
+                    applies_to_rule_ids, created_by, updated_by)
+                   VALUES (%s, %s, 'custom', 'company', %s, %s, %s, %s, %s)
+                   RETURNING *""",
+                (
+                    organization_id,
+                    policy_id,
+                    title,
+                    text,
+                    applies_to_rule_ids,
+                    actor_id,
+                    actor_id,
+                ),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("company policy insert did not return a row")
+            self._record_policy_revision(row, change_kind="created", changed_by=actor_id)
+            self.append_audit_event(
+                organization_id=organization_id,
+                trace_id=f"policy-{row['id']}-r{row['revision']}",
+                event_type="POLICY_CREATED",
+                payload={"policy_id": policy_id, "kind": "custom", "revision": row["revision"]},
+            )
+            return row
+
+    def update_organization_policy(
+        self,
+        *,
+        organization_id: UUID,
+        policy_id: str,
+        updates: dict[str, Any],
+        actor_id: UUID,
+    ) -> Row | None:
+        """Update policy content for one organization and append a revision/audit event."""
+        allowed_columns = {"title", "text", "severity", "is_active", "applies_to_rule_ids"}
+        if not updates or not set(updates).issubset(allowed_columns):
+            raise ValueError("unsupported organization policy update")
+        with self.connection.transaction():
+            current = self.connection.execute(
+                """SELECT * FROM public.organization_policies
+                   WHERE organization_id = %s AND policy_id = %s FOR UPDATE""",
+                (organization_id, policy_id),
+            ).fetchone()
+            if current is None:
+                return None
+            assignments: list[str] = []
+            values: list[Any] = []
+            change_kind = "updated"
+            event_type = "POLICY_UPDATED"
+            for key, value in updates.items():
+                assignments.append(f"{key} = %s")
+                values.append(value)
+            if current["kind"] == "custom" and "is_active" in updates:
+                assignments.append(
+                    "archived_at = CASE WHEN %s THEN NULL ELSE COALESCE(archived_at, now()) END"
+                )
+                values.append(bool(updates["is_active"]))
+                if not updates["is_active"]:
+                    change_kind = "archived"
+                    event_type = "POLICY_ARCHIVED"
+                elif current.get("archived_at") is not None:
+                    event_type = "POLICY_RESTORED"
+            assignments.extend(["revision = revision + 1", "updated_by = %s", "updated_at = now()"])
+            values.extend([actor_id, organization_id, policy_id])
+            row = self.connection.execute(
+                """UPDATE public.organization_policies SET """
+                + ", ".join(assignments)
+                + " WHERE organization_id = %s AND policy_id = %s RETURNING *",
+                values,
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("organization policy update did not return a row")
+            self._record_policy_revision(row, change_kind=change_kind, changed_by=actor_id)
+            self.append_audit_event(
+                organization_id=organization_id,
+                trace_id=f"policy-{row['id']}-r{row['revision']}",
+                event_type=event_type,
+                payload={
+                    "policy_id": policy_id,
+                    "kind": row["kind"],
+                    "revision": row["revision"],
+                    "changed_fields": sorted(updates),
+                },
+            )
+            return row
+
+    def archive_company_policy(
+        self, *, organization_id: UUID, policy_id: str, actor_id: UUID
+    ) -> Row | None:
+        """Soft-archive a custom policy so cited historic content remains traceable."""
+        with self.connection.transaction():
+            row = self.connection.execute(
+                """UPDATE public.organization_policies
+                   SET is_active = false, archived_at = now(), revision = revision + 1,
+                       updated_by = %s, updated_at = now()
+                   WHERE organization_id = %s AND policy_id = %s AND kind = 'custom'
+                   RETURNING *""",
+                (actor_id, organization_id, policy_id),
+            ).fetchone()
+            if row is None:
+                return None
+            self._record_policy_revision(row, change_kind="archived", changed_by=actor_id)
+            self.append_audit_event(
+                organization_id=organization_id,
+                trace_id=f"policy-{row['id']}-r{row['revision']}",
+                event_type="POLICY_ARCHIVED",
+                payload={"policy_id": policy_id, "kind": "custom", "revision": row["revision"]},
+            )
+            return row
+
+    def _record_policy_revision(
+        self, row: Row, *, change_kind: str, changed_by: UUID | None
+    ) -> None:
+        snapshot = {
+            key: (
+                value.isoformat()
+                if isinstance(value, datetime)
+                else str(value)
+                if isinstance(value, UUID)
+                else value
+            )
+            for key, value in row.items()
+        }
+        self.connection.execute(
+            """INSERT INTO public.organization_policy_revisions
+               (organization_id, policy_id, revision, change_kind, snapshot, changed_by)
+               VALUES (%s, %s, %s, %s, %s, %s)""",
+            (
+                row["organization_id"],
+                row["id"],
+                row["revision"],
+                change_kind,
+                Jsonb(snapshot),
+                changed_by,
+            ),
+        )
+
     def create_integration(
         self,
         *,
@@ -255,6 +447,7 @@ class PostgresWorkflowRepository:
         expected_source_version: str | None = None,
         expected_source_hash: str | None = None,
         policy_ids: list[str] | None = None,
+        policy_snapshot: list[dict[str, Any]] | None = None,
         attempts: int = 1,
         latency_ms: int = 0,
     ) -> UUID:
@@ -264,8 +457,8 @@ class PostgresWorkflowRepository:
                 """INSERT INTO public.proposals
                    (organization_id, exception_case_id, analysis_job_id, version, source,
                     model, prompt_version, expected_source_version, expected_source_hash,
-                    proposal, policy_ids, attempts, latency_ms)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    proposal, policy_ids, policy_snapshot, attempts, latency_ms)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    RETURNING id""",
                 (
                     organization_id,
@@ -279,6 +472,7 @@ class PostgresWorkflowRepository:
                     expected_source_hash,
                     Jsonb(proposal),
                     policy_ids or [],
+                    Jsonb(policy_snapshot or []),
                     attempts,
                     latency_ms,
                 ),
@@ -639,6 +833,21 @@ class PostgresWorkflowRepository:
             ).fetchall()
         )
 
+    def list_employee_names(self, organization_id: UUID) -> dict[str, str]:
+        """Return the latest company-provided employee names seen in this organization."""
+        rows = self.connection.execute(
+            """SELECT DISTINCT ON (external_employee_ref)
+                     external_employee_ref,
+                     NULLIF(btrim(minimal_payload->>'employee_name'), '') AS employee_name
+               FROM public.inbound_events
+               WHERE organization_id = %s
+                 AND external_employee_ref IS NOT NULL
+                 AND NULLIF(btrim(minimal_payload->>'employee_name'), '') IS NOT NULL
+               ORDER BY external_employee_ref, received_at DESC, id DESC""",
+            (organization_id,),
+        ).fetchall()
+        return {str(row["external_employee_ref"]): str(row["employee_name"]) for row in rows}
+
     def set_exception_case_status(self, case_id: UUID, status: str) -> None:
         """Update one case's workflow state after analysis."""
         self.connection.execute(
@@ -896,6 +1105,93 @@ class PostgresWorkflowRepository:
                 ),
             )
             return conversation_id
+
+    def start_conversation_exchange(
+        self,
+        *,
+        organization_id: UUID,
+        user_id: UUID,
+        conversation_id: UUID | None,
+        title: str,
+        question: str,
+    ) -> UUID:
+        """Save the user's question before model work and return its conversation ID."""
+        with self.connection.transaction():
+            if conversation_id is None:
+                row = self.connection.execute(
+                    """INSERT INTO public.conversations
+                       (organization_id, user_id, title)
+                       VALUES (%s, %s, %s) RETURNING id""",
+                    (organization_id, user_id, title[:160]),
+                ).fetchone()
+                if row is None:
+                    raise RuntimeError("conversation insert did not return an ID")
+                conversation_id = UUID(str(row["id"]))
+            else:
+                row = self.connection.execute(
+                    """UPDATE public.conversations SET updated_at = now()
+                       WHERE id = %s AND organization_id = %s AND user_id = %s
+                       RETURNING id""",
+                    (conversation_id, organization_id, user_id),
+                ).fetchone()
+                if row is None:
+                    raise RuntimeError("conversation was not found while saving question")
+
+            last = self.connection.execute(
+                """SELECT COALESCE(MAX(sequence_number), 0) AS max_sequence
+                   FROM public.messages WHERE conversation_id = %s""",
+                (conversation_id,),
+            ).fetchone()
+            next_sequence = int(last["max_sequence"]) + 1 if last else 1
+            self.connection.execute(
+                """INSERT INTO public.messages
+                   (organization_id, conversation_id, sequence_number, role, content,
+                    model, source_references)
+                   VALUES (%s, %s, %s, 'user', %s, NULL, '[]'::jsonb)""",
+                (organization_id, conversation_id, next_sequence, question),
+            )
+            return conversation_id
+
+    def finish_conversation_exchange(
+        self,
+        *,
+        organization_id: UUID,
+        user_id: UUID,
+        conversation_id: UUID,
+        answer: str,
+        model: str,
+        source_references: list[dict[str, Any]],
+    ) -> None:
+        """Save the assistant response after its streamed text is already visible."""
+        with self.connection.transaction():
+            row = self.connection.execute(
+                """UPDATE public.conversations SET updated_at = now()
+                   WHERE id = %s AND organization_id = %s AND user_id = %s
+                   RETURNING id""",
+                (conversation_id, organization_id, user_id),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("conversation was not found while saving answer")
+            last = self.connection.execute(
+                """SELECT COALESCE(MAX(sequence_number), 0) AS max_sequence
+                   FROM public.messages WHERE conversation_id = %s""",
+                (conversation_id,),
+            ).fetchone()
+            next_sequence = int(last["max_sequence"]) + 1 if last else 1
+            self.connection.execute(
+                """INSERT INTO public.messages
+                   (organization_id, conversation_id, sequence_number, role, content,
+                    model, source_references)
+                   VALUES (%s, %s, %s, 'assistant', %s, %s, %s)""",
+                (
+                    organization_id,
+                    conversation_id,
+                    next_sequence,
+                    answer,
+                    model,
+                    Jsonb(source_references),
+                ),
+            )
 
     def list_conversations(
         self, organization_id: UUID, user_id: UUID, *, limit: int = 100

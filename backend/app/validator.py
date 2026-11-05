@@ -49,6 +49,7 @@ class ValidationContext:
     as_of: datetime
     book: PolicyBook
     retrieved_policy_ids: Sequence[str]
+    disabled_rule_ids: frozenset[str] = frozenset()
     employee_note: str = ""
 
 
@@ -324,9 +325,21 @@ def _check_simulation(
         updated_punches, updated_schedules = apply_in_memory(
             ctx.punches, ctx.schedules, correction, detected_exception
         )
-        before = detect_employee(ctx.employee, ctx.punches, ctx.schedules, ctx.as_of, ctx.book)
+        before = detect_employee(
+            ctx.employee,
+            ctx.punches,
+            ctx.schedules,
+            ctx.as_of,
+            ctx.book,
+            disabled_rule_ids=ctx.disabled_rule_ids,
+        )
         after = detect_employee(
-            ctx.employee, updated_punches, updated_schedules, ctx.as_of, ctx.book
+            ctx.employee,
+            updated_punches,
+            updated_schedules,
+            ctx.as_of,
+            ctx.book,
+            disabled_rule_ids=ctx.disabled_rule_ids,
         )
     except (TypeError, ValueError, KeyError, AssertionError) as error:
         return (
@@ -412,7 +425,7 @@ def _finding_key(finding: DetectedException) -> tuple[str, date]:
 def _check_explanation(
     proposal: LLMProposal, exc: ExceptionRecord, ctx: ValidationContext
 ) -> CheckResult:
-    known_rules = {rule.id for rule in ctx.book.rules}
+    known_rules = {rule.id for rule in ctx.book.rules} | set(ctx.retrieved_policy_ids)
     citations = set(proposal.policy_ids_cited)
     tokens = set(_RULE_TOKEN.findall(proposal.explanation))
     unknown = tokens - known_rules

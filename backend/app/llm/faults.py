@@ -48,6 +48,23 @@ class FaultInjector:
             return _mutate(result, bundle, naive_latest=True)
         return result
 
+    def generate_stream(
+        self,
+        bundle: PromptBundle,
+        attempt: int,
+        on_delta: Callable[[str], None],
+        feedback: str | None = None,
+    ) -> LLMResult:
+        """Forward assistant token streaming without applying proposal fault modes."""
+        if bundle.context.get("task") != "assistant":
+            raise LLMUnavailable("Streaming is available only for assistant answers")
+        stream_method = getattr(self.inner, "generate_stream", None)
+        if callable(stream_method):
+            return stream_method(bundle, attempt, on_delta=on_delta, feedback=feedback)
+        result = self.inner.generate(bundle, attempt, feedback)
+        on_delta(result.raw_text)
+        return result
+
 
 def _mutate(
     result: LLMResult,

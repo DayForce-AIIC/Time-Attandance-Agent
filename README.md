@@ -15,11 +15,14 @@ ShiftGuard is a university innovation challenge prototype. It uses synthetic att
 - Records proposals, decisions, validations, and audit events.
 - Provides a read-only Ask ShiftGuard assistant. It requires a reachable Ollama model; it is unavailable in mock LLM mode.
 - Supports a Supabase-backed HR workflow with sign-in, persisted cases and decisions, a durable analysis worker, writeback status, and per-user assistant conversations.
+- Provides an HR-only Policies page to edit built-in rules and manage company guidance used by analysis and Ask ShiftGuard.
 - Integrates with a synthetic attendance provider for demos and a vendor-neutral HTTP provider interface for company integration work.
 
 ### Data ownership
 
-The company HR/timekeeping platform remains the source of truth for employees, punches, schedules, and leave. ShiftGuard does not create a master employee or attendance database. In Supabase mode it stores workflow data such as event references, exception cases, proposals, validations, decisions, audit events, and assistant conversations. The connector fetches attendance evidence when needed and retains a minimized case snapshot and source hash for review.
+The company HR/timekeeping platform remains the source of truth for employees, punches, schedules, and leave. ShiftGuard does not create a master employee or attendance database. In Supabase mode it stores workflow data such as event references, exception cases, proposals, validations, decisions, audit events, assistant conversations, and organization policies with revisions. The connector fetches attendance evidence when needed and retains a minimized case snapshot and source hash for review.
+
+The Policies page is available to signed-in HR users in Supabase mode. It can enable or disable built-in rules and edit their titles, descriptions, and severity. Company guidance can be added, edited, restored, or archived; it is supplied to the LLM as reference context and does not add detector logic. Built-in numeric thresholds and algorithms remain fixed in this prototype. Each proposal keeps a snapshot of the policy text and revisions used for review.
 
 The bundled company provider is synthetic. The real company API contract, webhook signature format, credentials, field mappings, and correction behavior must be agreed and verified with that company. See [the company integration contract](docs/COMPANY_INTEGRATION_CONTRACT.md).
 
@@ -140,7 +143,7 @@ supabase db push --dry-run --remote
 make supabase-db-push
 ```
 
-Apply every migration in `supabase/migrations`. They create workflow tables, user profiles and scope, durable analysis jobs, writeback state, conversation ordering, and worker heartbeats. Review the dry run before applying schema changes.
+Apply every migration in `supabase/migrations`. They create workflow tables, user profiles and scope, durable analysis jobs, writeback state, conversation ordering, worker heartbeats, and organization policies with revision history. Review the dry run before applying schema changes.
 
 ### 2. Create the HR user, organization, and integration
 
@@ -237,7 +240,15 @@ cd backend
 PYTHONPATH=. ../.venv/bin/python scripts/send_synthetic_company_event.py
 ```
 
-The script sends a signed synthetic event for the bundled missing-out-punch record. The API stores the event and a durable job in Supabase. The worker fetches the synthetic attendance evidence, runs deterministic detection, asks Ollama for a proposal, validates the result, and persists the case and proposal. Refresh the HR queue to review it.
+With the mock attendance provider, the script sends one signed event for each of the 15 built-in detector rules. The mock provider supplies matching, deterministic timecard histories; some scenarios can also produce related findings. Keep the built-in rules enabled if you want cases for all 15. Custom company policies are reference guidance for the LLM and do not create new detector rules. The API stores each event and a durable job in Supabase. The worker fetches the evidence, runs deterministic detection, asks the configured LLM for proposals where applicable, validates them, and persists the resulting cases. Keep `make worker` running, then refresh the HR queue after processing finishes.
+
+To queue only selected rule scenarios, pass `--scenario` once per rule ID, for example:
+
+```bash
+PYTHONPATH=. ../.venv/bin/python scripts/send_synthetic_company_event.py --scenario PUNCH-01 --scenario OT-02
+```
+
+Use `--single` with `--record-ref`, `--employee-ref`, or `--version` to send one event for a specific source record, as in the original workflow. The all-rules batch is available only with `ATTENDANCE_PROVIDER=mock`.
 
 Check readiness at [http://localhost:8000/api/v1/health/ready](http://localhost:8000/api/v1/health/ready). In Supabase mode it reports the database, attendance provider, Ollama model, and recent worker heartbeat; it returns HTTP 503 while a required dependency is not ready.
 
@@ -284,6 +295,10 @@ Interactive request and response schemas are available at `/docs` while the API 
 | `GET` | `/api/v1/me` | Signed-in user profile and organization |
 | `GET` | `/api/v1/exceptions` | Manager-scoped demo cases or organization-scoped HR cases |
 | `GET` | `/api/v1/exceptions/{id}` | Case evidence, policy passages, proposal, and decision |
+| `GET` | `/api/v1/organization/policies` | List the organization's built-in rules and company policies (HR) |
+| `POST` | `/api/v1/organization/policies` | Add company attendance guidance (HR) |
+| `PATCH` | `/api/v1/organization/policies/{policy_id}` | Edit or enable/disable a rule or policy (HR) |
+| `DELETE` | `/api/v1/organization/policies/{policy_id}` | Archive company guidance (HR) |
 | `POST` | `/api/v1/exceptions/{id}/propose` | Generate and validate a proposal |
 | `POST` | `/api/v1/exceptions/{id}/decision` | Approve, edit, or reject a proposal |
 | `POST` | `/integrations/v1/events/attendance-changed` | Verify and queue a signed company attendance event |

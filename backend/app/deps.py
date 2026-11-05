@@ -18,6 +18,7 @@ from app.errors import Forbidden, NotFound
 from app.hr_review import HRReviewService
 from app.integrations.provider import AttendanceProvider
 from app.llm.base import LLMClient
+from app.organization_policies import resolve_organization_policy_context
 from app.policies import PolicyBook
 from app.workflow_repository import PostgresWorkflowRepository
 
@@ -195,10 +196,14 @@ def get_hr_review_service(
         return None
     if principal.organization_id is None:
         raise Forbidden("HR review requires an organization profile")
+    policy_context = resolve_organization_policy_context(
+        repository, principal.organization_id, book
+    )
     return HRReviewService(
         repository,
         provider,
         principal.organization_id,
-        book,
+        policy_context.book,
         request.app.state.operational_alerts,
+        policy_context,
     )

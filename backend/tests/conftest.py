@@ -13,7 +13,7 @@ from app.detection import run_detection
 from app.llm.base import LLMResult, PromptBundle
 from app.main import create_app
 from app.policies import load_policies
-from app.schemas import AssistantModelAnswer
+from app.schemas import AssistantEvidenceSelection, AssistantModelAnswer
 from app.seed import seed
 from fastapi.testclient import TestClient
 
@@ -28,6 +28,19 @@ class AssistantTestClient:
     ) -> LLMResult:
         del attempt, feedback
         payload = json.loads(bundle.user)
+        if bundle.context.get("stage") == "evidence_selection":
+            candidate_records = payload.get("candidate_records", [])
+            selection = AssistantEvidenceSelection(
+                source_ids=[str(source["source_id"]) for source in candidate_records]
+            )
+            return LLMResult(
+                raw_text=selection.model_dump_json(),
+                latency_ms=1,
+                prompt_tokens=None,
+                completion_tokens=None,
+                model=self.model,
+            )
+
         question = str(payload["question"]).casefold()
         source_ids = list(bundle.context.get("source_ids", []))
         if "likely to be absent" in question:

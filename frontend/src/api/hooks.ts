@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "./client";
+import { apiFetch, apiStream, type ApiStreamEvent } from "./client";
 import {
   auditEventSchema,
   auditVerifySchema,
@@ -14,7 +14,11 @@ import {
   healthSchema,
   llmModeSchema,
   metricsSchema,
+  organizationPolicyListSchema,
+  organizationPolicySchema,
   proposalOutSchema,
+  type OrganizationPolicyCreate,
+  type OrganizationPolicyUpdate,
   type ExceptionStatus,
   type FaultMode,
 } from "./schemas";
@@ -146,10 +150,19 @@ export function useMetrics() {
 export function useAssistantQuery() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { question: string; conversation_id: string | null }) => apiFetch(`${API}/assistant/query`, {
+    mutationFn: (input: {
+      question: string;
+      conversation_id: string | null;
+      onEvent?: (event: ApiStreamEvent) => void;
+    }) => apiStream(`${API}/assistant/query/stream`, {
       method: "POST",
-      body: JSON.stringify(input),
-    }, assistantAnswerSchema),
+      body: JSON.stringify({ question: input.question, conversation_id: input.conversation_id }),
+    }, assistantAnswerSchema, (event) => {
+      if (event.event === "conversation") {
+        void queryClient.invalidateQueries({ queryKey: ["assistant-conversations"] });
+      }
+      input.onEvent?.(event);
+    }),
     onSuccess: async (answer) => {
       if (answer.conversation_id) {
         await Promise.all([
@@ -263,5 +276,59 @@ export function useVerifyAudit(enabled: boolean) {
     queryKey: ["audit-verify"],
     queryFn: () => apiFetch(`${API}/audit/verify`, {}, auditVerifySchema),
     enabled,
+  });
+}
+
+export function useOrganizationPolicies(enabled = true) {
+  return useQuery({
+    queryKey: ["organization-policies"],
+    queryFn: () => apiFetch(`${API}/organization/policies`, {}, organizationPolicyListSchema),
+    enabled,
+  });
+}
+
+function useRefreshOrganizationPolicies() {
+  const queryClient = useQueryClient();
+  return async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["organization-policies"] }),
+      queryClient.invalidateQueries({ queryKey: ["exceptions"] }),
+    ]);
+  };
+}
+
+export function useCreateOrganizationPolicy() {
+  const refresh = useRefreshOrganizationPolicies();
+  return useMutation({
+    mutationFn: (body: OrganizationPolicyCreate) => apiFetch(
+      `${API}/organization/policies`,
+      { method: "POST", body: JSON.stringify(body) },
+      organizationPolicySchema,
+    ),
+    onSuccess: refresh,
+  });
+}
+
+export function useUpdateOrganizationPolicy() {
+  const refresh = useRefreshOrganizationPolicies();
+  return useMutation({
+    mutationFn: ({ policyId, body }: { policyId: string; body: OrganizationPolicyUpdate }) => apiFetch(
+      `${API}/organization/policies/${encodeURIComponent(policyId)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+      organizationPolicySchema,
+    ),
+    onSuccess: refresh,
+  });
+}
+
+export function useArchiveOrganizationPolicy() {
+  const refresh = useRefreshOrganizationPolicies();
+  return useMutation({
+    mutationFn: (policyId: string) => apiFetch(
+      `${API}/organization/policies/${encodeURIComponent(policyId)}`,
+      { method: "DELETE" },
+      organizationPolicySchema,
+    ),
+    onSuccess: refresh,
   });
 }

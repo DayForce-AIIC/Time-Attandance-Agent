@@ -22,6 +22,7 @@ from app.integrations.schemas import (
     PunchEvidence,
     ScheduleEvidence,
 )
+from app.integrations.synthetic_scenarios import synthetic_scenario_records
 
 
 class MockAttendanceProvider:
@@ -113,6 +114,8 @@ class MockAttendanceProvider:
                 ],
             ),
         }
+        scenario_records, _ = synthetic_scenario_records()
+        self._records.update({record.record_ref: record for record in scenario_records})
         self._operations: dict[str, CorrectionResult] = {}
         self._operation_fingerprints: dict[str, str] = {}
         self._change_event = AttendanceChangedEvent.model_validate(

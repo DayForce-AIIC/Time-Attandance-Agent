@@ -38,7 +38,7 @@ class HttpAttendanceProvider:
                 f"/v1/attendance/records/{quote(record_ref, safe='')}",
                 params={
                     "version": version,
-                    "include": "punches,schedule,leave",
+                    "include": "employee_name,punches,schedule,leave",
                 },
             )
         except httpx.HTTPStatusError as exc:
@@ -85,7 +85,7 @@ class HttpAttendanceProvider:
                 params={
                     "from": start_date.isoformat(),
                     "through": end_date.isoformat(),
-                    "include": "punches,schedule,leave",
+                    "include": "employee_name,punches,schedule,leave",
                 },
             )
         except httpx.HTTPStatusError as exc:
