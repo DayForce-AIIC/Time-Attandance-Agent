@@ -259,8 +259,18 @@ class AssistantSource(BaseModel):
     href: str | None = None
 
 
+class AssistantEvidenceSelection(BaseModel):
+    """Model-selected source IDs that directly answer an assistant question."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_ids: list[str] = Field(
+        description="Only retrieved source IDs that directly support the current question."
+    )
+
+
 class AssistantModelAnswer(BaseModel):
-    """Strict model response contract for the single-call attendance assistant."""
+    """Strict model response contract for the attendance assistant."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -268,8 +278,14 @@ class AssistantModelAnswer(BaseModel):
     uses_evidence: bool = Field(
         description="Whether the answer relies on supplied evidence sources."
     )
-    answer: str = Field(min_length=5, max_length=1200)
-    source_ids: list[str] = Field(max_length=55)
+    answer: str = Field(
+        min_length=1,
+        description=(
+            "A short, plain-language answer to the question, usually one or two sentences. "
+            "For people lists, include only matching employee names or references; never dump records."
+        ),
+    )
+    source_ids: list[str]
 
 
 class AssistantAnswer(BaseModel):

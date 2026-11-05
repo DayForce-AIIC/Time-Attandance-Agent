@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "./client";
+import { apiFetch, apiStream, type ApiStreamEvent } from "./client";
 import {
   auditEventSchema,
   auditVerifySchema,
@@ -150,10 +150,19 @@ export function useMetrics() {
 export function useAssistantQuery() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { question: string; conversation_id: string | null }) => apiFetch(`${API}/assistant/query`, {
+    mutationFn: (input: {
+      question: string;
+      conversation_id: string | null;
+      onEvent?: (event: ApiStreamEvent) => void;
+    }) => apiStream(`${API}/assistant/query/stream`, {
       method: "POST",
-      body: JSON.stringify(input),
-    }, assistantAnswerSchema),
+      body: JSON.stringify({ question: input.question, conversation_id: input.conversation_id }),
+    }, assistantAnswerSchema, (event) => {
+      if (event.event === "conversation") {
+        void queryClient.invalidateQueries({ queryKey: ["assistant-conversations"] });
+      }
+      input.onEvent?.(event);
+    }),
     onSuccess: async (answer) => {
       if (answer.conversation_id) {
         await Promise.all([

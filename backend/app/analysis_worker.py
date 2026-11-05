@@ -875,15 +875,20 @@ def _model_correlation_id(case_key: str) -> int:
 
 
 def _canonical_record_hash(record: AttendanceRecord) -> str:
-    return _json_hash(record.model_dump(mode="json"))
+    return _json_hash(_attendance_record_evidence_payload(record))
 
 
 def _range_hash(records: list[AttendanceRecord]) -> str:
     canonical_records = [
-        record.model_dump(mode="json")
+        _attendance_record_evidence_payload(record)
         for record in sorted(records, key=lambda item: (item.work_date, item.record_ref))
     ]
     return _json_hash(canonical_records)
+
+
+def _attendance_record_evidence_payload(record: AttendanceRecord) -> dict[str, object]:
+    """Exclude employee display names from hashes that represent attendance evidence."""
+    return record.model_dump(mode="json", exclude={"employee_name"})
 
 
 def _json_hash(value: Any) -> str:
@@ -931,6 +936,7 @@ def _minimal_snapshot(
     )
     return {
         "work_date": finding.work_date.isoformat(),
+        "employee_name": source_record.employee_name,
         "timezone": source_record.timezone,
         "jurisdiction": source_record.jurisdiction,
         "trigger_record_ref": source_record.record_ref,

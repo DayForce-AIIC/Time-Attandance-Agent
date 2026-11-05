@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sqlite3
+from collections.abc import AsyncIterator
 from datetime import date, datetime, timedelta, timezone
 from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from psycopg import Error as PostgresError
 
 from app import repo
@@ -24,6 +26,7 @@ from app.deps import (
     current_manager,
     current_principal,
     demo_manager,
+    get_attendance_provider,
     get_book,
     get_clock,
     get_conn,
@@ -126,6 +129,7 @@ def assistant_query(
     settings: Settings = Depends(get_settings),
     principal: Principal = Depends(current_principal),
     workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+    attendance_provider=Depends(get_attendance_provider),
 ) -> AssistantAnswer:
     """Answer attendance questions only when the configured Ollama model is available."""
     if settings.llm_provider != "ollama":
@@ -181,6 +185,7 @@ def assistant_query(
                     workflow_repository, principal.organization_id, book
                 ),
                 history,
+                attendance_provider,
             )
             request.app.state.operational_alerts.report_success("ollama")
             conversation_id = workflow_repository.persist_conversation_exchange(
@@ -207,6 +212,198 @@ def assistant_query(
             status_code=503,
             detail="Ollama did not return a valid answer. Check the model and try again.",
         ) from exc
+
+
+@router.post(
+    "/assistant/query/stream",
+    summary="Stream a manager's read-only attendance answer",
+    tags=["assistant"],
+    responses={
+        403: {"model": ErrorOut},
+        429: {"model": ErrorOut},
+        503: {"model": ErrorOut},
+    },
+)
+def assistant_query_stream(
+    body: AssistantQuestion,
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_conn),
+    manager_id: str = Depends(current_manager),
+    llm=Depends(get_llm),
+    book: PolicyBook = Depends(get_book),
+    settings: Settings = Depends(get_settings),
+    principal: Principal = Depends(current_principal),
+    workflow_repository: PostgresWorkflowRepository | None = Depends(get_workflow_repository),
+    attendance_provider=Depends(get_attendance_provider),
+) -> StreamingResponse:
+    """Stream answer text while preserving the normal evidence retrieval and persistence flow."""
+    if settings.llm_provider != "ollama":
+        raise HTTPException(
+            status_code=503,
+            detail="Ask ShiftGuard requires Ollama. Switch from mock mode and restart the backend.",
+        )
+    if not ollama_model_is_available(settings):
+        request.app.state.operational_alerts.report_failure(
+            "ollama",
+            "configured_model_unavailable",
+            trace_id=trace_id_var.get(),
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"The configured Ollama model '{settings.ollama_model}' is unavailable. "
+                "Start Ollama and make sure the model is installed, then try again."
+            ),
+        )
+
+    history: list[dict[str, str]] = []
+    if settings.auth_mode == "supabase":
+        if principal.role != "HR" or principal.organization_id is None:
+            raise Forbidden("HR role required")
+        if workflow_repository is None:
+            raise HTTPException(status_code=503, detail="Conversation storage is unavailable")
+        if body.conversation_id is not None:
+            if (
+                workflow_repository.get_conversation(
+                    body.conversation_id, principal.organization_id, UUID(principal.user_id)
+                )
+                is None
+            ):
+                raise NotFound("conversation was not found")
+            prior_messages = workflow_repository.list_conversation_messages(
+                body.conversation_id,
+                principal.organization_id,
+                UUID(principal.user_id),
+                limit=8,
+            )
+            history = [
+                {"role": str(message["role"]), "content": str(message["content"])[:1200]}
+                for message in prior_messages
+            ]
+
+    async def event_stream() -> AsyncIterator[str]:
+        """Run blocking retrieval/model work in a thread and forward answer deltas as SSE."""
+        yield _assistant_stream_event(
+            "status", {"message": "Reviewing current records and policies…"}
+        )
+        event_queue: asyncio.Queue[tuple[str, dict[str, object]]] = asyncio.Queue()
+        loop = asyncio.get_running_loop()
+
+        def publish(event_name: str, payload: dict[str, object]) -> None:
+            loop.call_soon_threadsafe(event_queue.put_nowait, (event_name, payload))
+
+        def work() -> None:
+            try:
+                if settings.auth_mode == "supabase":
+                    assert principal.organization_id is not None
+                    assert workflow_repository is not None
+                    user_id = UUID(principal.user_id)
+                    saved_conversation_id: UUID | None = None
+                    save_warning: str | None = None
+                    try:
+                        saved_conversation_id = workflow_repository.start_conversation_exchange(
+                            organization_id=principal.organization_id,
+                            user_id=user_id,
+                            conversation_id=body.conversation_id,
+                            title=body.question.strip(),
+                            question=body.question.strip(),
+                        )
+                        publish(
+                            "conversation",
+                            {"conversation_id": str(saved_conversation_id)},
+                        )
+                    except Exception:
+                        save_warning = "This answer may not be saved to conversation history."
+                    answer = answer_workflow_attendance_question(
+                        workflow_repository,
+                        principal.organization_id,
+                        body.question.strip(),
+                        llm,
+                        resolve_organization_policy_context(
+                            workflow_repository, principal.organization_id, book
+                        ),
+                        history,
+                        attendance_provider,
+                        on_token=lambda text: publish("token", {"text": text}),
+                        on_reset=lambda: publish("reset", {}),
+                    )
+                    request.app.state.operational_alerts.report_success("ollama")
+                    if saved_conversation_id is not None:
+                        answer = answer.model_copy(
+                            update={"conversation_id": saved_conversation_id}
+                        )
+                    publish("answer", answer.model_dump(mode="json"))
+                    if saved_conversation_id is not None:
+                        try:
+                            workflow_repository.finish_conversation_exchange(
+                                organization_id=principal.organization_id,
+                                user_id=user_id,
+                                conversation_id=saved_conversation_id,
+                                answer=answer.answer,
+                                model=answer.model,
+                                source_references=[
+                                    source.model_dump(mode="json") for source in answer.sources
+                                ],
+                            )
+                        except Exception:
+                            save_warning = (
+                                "The answer is shown, but it couldn't be saved to chat history."
+                            )
+                    if save_warning is not None:
+                        publish("save_error", {"detail": save_warning})
+                else:
+                    answer = answer_attendance_question(
+                        conn,
+                        manager_id,
+                        body.question.strip(),
+                        llm,
+                        book,
+                        on_token=lambda text: publish("token", {"text": text}),
+                        on_reset=lambda: publish("reset", {}),
+                    )
+                    request.app.state.operational_alerts.report_success("ollama")
+                publish("complete", answer.model_dump(mode="json"))
+            except (LLMTimeout, LLMUnavailable) as exc:
+                request.app.state.operational_alerts.report_failure(
+                    "ollama",
+                    "llm_timeout" if isinstance(exc, LLMTimeout) else "llm_unavailable",
+                    trace_id=trace_id_var.get(),
+                )
+                publish(
+                    "error",
+                    {
+                        "detail": "Ollama did not return a valid answer. Check the model and try again."
+                    },
+                )
+            except Exception:
+                publish("error", {"detail": "ShiftGuard could not complete that request."})
+
+        worker = asyncio.create_task(asyncio.to_thread(work))
+        while True:
+            try:
+                event_name, payload = await asyncio.wait_for(event_queue.get(), timeout=15)
+            except TimeoutError:
+                yield ": keep-alive\n\n"
+                continue
+            yield _assistant_stream_event(event_name, payload)
+            if event_name in {"complete", "error"}:
+                await worker
+                break
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+def _assistant_stream_event(event_name: str, payload: dict[str, object]) -> str:
+    """Encode one assistant update as a server-sent event frame."""
+    return f"event: {event_name}\ndata: {json.dumps(payload)}\n\n"
 
 
 @router.get(

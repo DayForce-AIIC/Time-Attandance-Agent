@@ -833,6 +833,21 @@ class PostgresWorkflowRepository:
             ).fetchall()
         )
 
+    def list_employee_names(self, organization_id: UUID) -> dict[str, str]:
+        """Return the latest company-provided employee names seen in this organization."""
+        rows = self.connection.execute(
+            """SELECT DISTINCT ON (external_employee_ref)
+                     external_employee_ref,
+                     NULLIF(btrim(minimal_payload->>'employee_name'), '') AS employee_name
+               FROM public.inbound_events
+               WHERE organization_id = %s
+                 AND external_employee_ref IS NOT NULL
+                 AND NULLIF(btrim(minimal_payload->>'employee_name'), '') IS NOT NULL
+               ORDER BY external_employee_ref, received_at DESC, id DESC""",
+            (organization_id,),
+        ).fetchall()
+        return {str(row["external_employee_ref"]): str(row["employee_name"]) for row in rows}
+
     def set_exception_case_status(self, case_id: UUID, status: str) -> None:
         """Update one case's workflow state after analysis."""
         self.connection.execute(
@@ -1090,6 +1105,93 @@ class PostgresWorkflowRepository:
                 ),
             )
             return conversation_id
+
+    def start_conversation_exchange(
+        self,
+        *,
+        organization_id: UUID,
+        user_id: UUID,
+        conversation_id: UUID | None,
+        title: str,
+        question: str,
+    ) -> UUID:
+        """Save the user's question before model work and return its conversation ID."""
+        with self.connection.transaction():
+            if conversation_id is None:
+                row = self.connection.execute(
+                    """INSERT INTO public.conversations
+                       (organization_id, user_id, title)
+                       VALUES (%s, %s, %s) RETURNING id""",
+                    (organization_id, user_id, title[:160]),
+                ).fetchone()
+                if row is None:
+                    raise RuntimeError("conversation insert did not return an ID")
+                conversation_id = UUID(str(row["id"]))
+            else:
+                row = self.connection.execute(
+                    """UPDATE public.conversations SET updated_at = now()
+                       WHERE id = %s AND organization_id = %s AND user_id = %s
+                       RETURNING id""",
+                    (conversation_id, organization_id, user_id),
+                ).fetchone()
+                if row is None:
+                    raise RuntimeError("conversation was not found while saving question")
+
+            last = self.connection.execute(
+                """SELECT COALESCE(MAX(sequence_number), 0) AS max_sequence
+                   FROM public.messages WHERE conversation_id = %s""",
+                (conversation_id,),
+            ).fetchone()
+            next_sequence = int(last["max_sequence"]) + 1 if last else 1
+            self.connection.execute(
+                """INSERT INTO public.messages
+                   (organization_id, conversation_id, sequence_number, role, content,
+                    model, source_references)
+                   VALUES (%s, %s, %s, 'user', %s, NULL, '[]'::jsonb)""",
+                (organization_id, conversation_id, next_sequence, question),
+            )
+            return conversation_id
+
+    def finish_conversation_exchange(
+        self,
+        *,
+        organization_id: UUID,
+        user_id: UUID,
+        conversation_id: UUID,
+        answer: str,
+        model: str,
+        source_references: list[dict[str, Any]],
+    ) -> None:
+        """Save the assistant response after its streamed text is already visible."""
+        with self.connection.transaction():
+            row = self.connection.execute(
+                """UPDATE public.conversations SET updated_at = now()
+                   WHERE id = %s AND organization_id = %s AND user_id = %s
+                   RETURNING id""",
+                (conversation_id, organization_id, user_id),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("conversation was not found while saving answer")
+            last = self.connection.execute(
+                """SELECT COALESCE(MAX(sequence_number), 0) AS max_sequence
+                   FROM public.messages WHERE conversation_id = %s""",
+                (conversation_id,),
+            ).fetchone()
+            next_sequence = int(last["max_sequence"]) + 1 if last else 1
+            self.connection.execute(
+                """INSERT INTO public.messages
+                   (organization_id, conversation_id, sequence_number, role, content,
+                    model, source_references)
+                   VALUES (%s, %s, %s, 'assistant', %s, %s, %s)""",
+                (
+                    organization_id,
+                    conversation_id,
+                    next_sequence,
+                    answer,
+                    model,
+                    Jsonb(source_references),
+                ),
+            )
 
     def list_conversations(
         self, organization_id: UUID, user_id: UUID, *, limit: int = 100
