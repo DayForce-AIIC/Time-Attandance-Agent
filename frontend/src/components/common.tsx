@@ -61,12 +61,24 @@ export function LoadingState({ label = "Loading review data…" }: { label?: str
   return <div className="loading-state" role="status"><span className="spinner" aria-hidden="true" />{label}</div>;
 }
 
-export function PageHeading({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
+export function Avatar({ name }: { name: string }) {
+  const initials = name
+    .split(/[\s_.-]+/)
+    .map((part) => part.charAt(0))
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "?";
+  return <span className="avatar" aria-hidden="true">{initials}</span>;
+}
+
+export function PageHeading({ eyebrow, title, subtitle, children }: { eyebrow?: string; title: string; subtitle?: string; children?: ReactNode }) {
   return (
     <div className="page-heading">
       <div>
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h1>{title}</h1>
+        {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
       </div>
       {children ? <div className="page-heading-actions">{children}</div> : null}
     </div>

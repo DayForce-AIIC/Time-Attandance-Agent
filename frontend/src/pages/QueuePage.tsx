@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useExceptions } from "../api/hooks";
 import type { ExceptionStatus } from "../api/schemas";
+import { AssistantLauncher } from "../components/AssistantLauncher";
 import { ErrorBanner, LoadingState, PageHeading } from "../components/common";
 import { ExceptionTable } from "../components/ExceptionTable";
 import { useAuth } from "../auth/AuthContext";
@@ -21,6 +22,15 @@ const RULES = [
   "OT-01", "OT-02", "OT-03", "SCHED-01", "SCHED-02", "REST-01", "DAY-01",
 ];
 
+const SUMMARY: { key: ExceptionStatus; label: string; tone: "neutral" | "info" | "warning" | "danger" | "success" }[] = [
+  { key: "OPEN", label: "Open", tone: "neutral" },
+  { key: "PENDING_REVIEW", label: "Pending review", tone: "info" },
+  { key: "ESCALATED", label: "Escalated", tone: "warning" },
+  { key: "WRITEBACK_PENDING", label: "Writeback pending", tone: "neutral" },
+  { key: "WRITEBACK_FAILED", label: "Writeback failed", tone: "danger" },
+  { key: "RESOLVED", label: "Resolved", tone: "success" },
+];
+
 export function QueuePage() {
   const auth = useAuth();
   const [status, setStatus] = useState<ExceptionStatus | "active" | "all">("active");
@@ -36,24 +46,24 @@ export function QueuePage() {
 
   return (
     <main className="page-shell">
-      <PageHeading eyebrow={auth.enabled ? "HR review queue" : "Manager queue"} title="Timecard exceptions">
+      <PageHeading
+        eyebrow={auth.enabled ? "HR review queue" : "Manager queue"}
+        title="Timecard exceptions"
+        subtitle="Review attendance anomalies, inspect the evidence, and decide on validated corrections."
+      >
         <span className="queue-date">Pay week · Mar 10–16, 2025</span>
+        <span className="queue-total"><strong>{allCases.data?.length ?? "—"}</strong> total cases</span>
       </PageHeading>
 
       <section className="summary-strip" aria-label="Exception counts by status">
-        {[
-          ["OPEN", "Open"],
-          ["PENDING_REVIEW", "Pending review"],
-          ["ESCALATED", "Escalated"],
-          ["WRITEBACK_PENDING", "Writeback pending"],
-          ["WRITEBACK_FAILED", "Writeback failed"],
-          ["RESOLVED", "Resolved"],
-        ].map(([key, label]) => (
-          <div className="summary-item" key={key}>
-            <span>{label}</span><strong>{counts[key] ?? (allCases.isLoading ? "—" : 0)}</strong>
-          </div>
-        ))}
-        <div className="summary-total"><strong>{allCases.data?.length ?? "—"}</strong><span>total cases</span></div>
+        {SUMMARY.map(({ key, label, tone }) => {
+          const count = counts[key] ?? (allCases.isLoading ? null : 0);
+          return (
+            <div className={`summary-item tone-${tone}${count === 0 ? " is-zero" : ""}`} key={key}>
+              <span>{label}</span><strong>{count ?? "—"}</strong>
+            </div>
+          );
+        })}
       </section>
 
       <section className="panel queue-panel" aria-labelledby="queue-heading">
@@ -95,6 +105,8 @@ export function QueuePage() {
         {query.isLoading ? <LoadingState label="Loading exception queue…" /> : <ExceptionTable exceptions={query.data ?? []} />}
         <div className="table-footer">Showing {query.data?.length ?? 0} cases · Sorted by severity and work date</div>
       </section>
+
+      <AssistantLauncher />
     </main>
   );
 }

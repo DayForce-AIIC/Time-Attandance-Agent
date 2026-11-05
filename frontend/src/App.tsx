@@ -5,6 +5,7 @@ import { AppHeader } from "./components/AppHeader";
 import { ManagerProvider } from "./context/ManagerContext";
 import { useCurrentUser } from "./api/hooks";
 
+import { BRAND } from "./brand";
 // Route-level lazy loading — each page is a separate chunk.
 // This keeps the initial bundle small: only the shell, header and auth
 // logic load on first paint; page code is fetched on demand.
@@ -82,7 +83,7 @@ function ProfileGate() {
       <main className="auth-shell">
         <section className="auth-card" role="alert">
           <p className="eyebrow">Access profile</p>
-          <h1>We couldn't load your ShiftGuard access</h1>
+          <h1>We couldn't load your {BRAND.name} access</h1>
           <p className="auth-description">
             Ask an administrator to assign your organization and role, then sign
             in again.
@@ -144,7 +145,7 @@ function Workspace() {
             </Routes>
           </Suspense>
           <footer className="app-footer">
-            <span>ShiftGuard · Evidence-led timecard review</span>
+            <span>{BRAND.name} · Evidence-led attendance review</span>
             <span>
               Suggestions always require an{" "}
               {auth.enabled ? "HR" : "manager"} decision

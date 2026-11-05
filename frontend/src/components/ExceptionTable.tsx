@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { ExceptionOut } from "../api/schemas";
-import { EmptyState, formatDateShort } from "./common";
+import { Avatar, EmptyState, formatDateShort } from "./common";
 import { SeverityBadge, StatusBadge } from "./common";
 
 export function ExceptionTable({ exceptions }: { exceptions: ExceptionOut[] }) {
@@ -25,10 +25,15 @@ export function ExceptionTable({ exceptions }: { exceptions: ExceptionOut[] }) {
             <tr key={exception.id}>
               <td><SeverityBadge severity={exception.severity} /></td>
               <td>
-                <strong>{exception.employee_name}</strong>
-                {exception.employee_name === exception.employee_id
-                  ? <small className="table-subtext">Company employee reference</small>
-                  : <small className="table-subtext">{exception.employee_id}</small>}
+                <div className="employee-cell">
+                  <Avatar name={exception.employee_name} />
+                  <div>
+                    <strong>{exception.employee_name}</strong>
+                    {exception.employee_name === exception.employee_id
+                      ? <small className="table-subtext">Company employee reference</small>
+                      : <small className="table-subtext">{exception.employee_id}</small>}
+                  </div>
+                </div>
               </td>
               <td>{formatDateShort(exception.work_date)}</td>
               <td>
@@ -36,7 +41,7 @@ export function ExceptionTable({ exceptions }: { exceptions: ExceptionOut[] }) {
                 <small className="table-subtext">{exception.title}</small>
               </td>
               <td><StatusBadge status={exception.status} /></td>
-              <td><Link className="table-link" to={`/exceptions/${exception.id}`}>Review <span aria-hidden="true">→</span></Link></td>
+              <td className="cell-action"><Link className="table-link" to={`/exceptions/${exception.id}`}>Review <span aria-hidden="true">→</span></Link></td>
             </tr>
           ))}
         </tbody>
