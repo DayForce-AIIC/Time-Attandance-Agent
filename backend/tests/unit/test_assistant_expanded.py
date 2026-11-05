@@ -17,12 +17,9 @@ from __future__ import annotations
 import json
 from uuid import uuid4
 
-import pytest
 from app.assistant import answer_attendance_question
-from app.llm.base import LLMResult, LLMTimeout, LLMUnavailable, PromptBundle
-from app.organization_policies import OrganizationPolicyContext
+from app.llm.base import LLMResult, LLMTimeout, LLMUnavailable
 from app.schemas import AssistantModelAnswer
-
 
 # ---------------------------------------------------------------------------
 # Shared fakes
@@ -211,15 +208,16 @@ def test_assistant_handles_malformed_json_response(seeded_conn, book):
 
 def test_assistant_handles_empty_answer_text(seeded_conn, book):
     """Model returns structurally valid JSON but empty answer string → fallback."""
-    empty_answer = AssistantModelAnswer(
-        in_scope=True,
-        uses_evidence=False,
-        answer="",
-        source_ids=[],
-    )
     llm = FixedClient(
         LLMResult(
-            raw_text=json.dumps(empty_answer.model_dump(mode="json")),
+            raw_text=json.dumps(
+                {
+                    "in_scope": True,
+                    "uses_evidence": False,
+                    "answer": "",
+                    "source_ids": [],
+                }
+            ),
             latency_ms=1,
             prompt_tokens=None,
             completion_tokens=None,
@@ -331,7 +329,7 @@ def test_assistant_rate_limit_applied_to_stream_endpoint(ollama_client):
 
     # First request should succeed.
     r1 = ollama_client.post(
-        "/api/v1/assistant/query",
+        "/api/v1/assistant/query/stream",
         json={"question": "Show open cases"},
         headers={"X-Manager-Id": "m-001"},
     )
@@ -339,7 +337,7 @@ def test_assistant_rate_limit_applied_to_stream_endpoint(ollama_client):
 
     # Second request in the same window should be rate-limited.
     r2 = ollama_client.post(
-        "/api/v1/assistant/query",
+        "/api/v1/assistant/query/stream",
         json={"question": "Show open cases"},
         headers={"X-Manager-Id": "m-001"},
     )

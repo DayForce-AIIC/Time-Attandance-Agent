@@ -1,0 +1,7 @@
+# Keep the FastAPI/Pydantic schema generator identical for local development and CI.
+# Update this set only with a reviewed docs/openapi.json regeneration.
+fastapi==0.162.0
+starlette==1.10.0
+pydantic==2.14.2
+pydantic-core==2.50.2
+pydantic-settings==2.16.2

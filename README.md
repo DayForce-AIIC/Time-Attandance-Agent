@@ -7,6 +7,22 @@
 
 ShiftGuard is a university innovation challenge prototype. It uses synthetic attendance data by default and does not calculate payroll. A real company integration, production credentials, deployment host, and operational policies must be supplied by the organization before production use.
 
+## Product problem
+
+HR and timekeeping teams often have to compare punches, schedules, local attendance rules, and source-system history by hand when a timecard looks wrong. That review takes time, and an automatic correction can create payroll or compliance risk if it misses context. ShiftGuard is intended to reduce the manual work of finding and investigating exceptions while keeping the correction decision with an authorized person.
+
+ShiftGuard is a review and workflow aid. The company's attendance or HR system remains the source of truth, and ShiftGuard does not calculate payroll or autonomously change a timecard.
+
+## User journey
+
+1. An attendance change is received from the source system. In the authenticated workflow, ShiftGuard verifies the signed event, deduplicates it, and queues analysis. The local demo starts with seeded synthetic cases instead.
+2. The analysis worker fetches the bounded attendance evidence needed for the case and runs deterministic rules to identify possible exceptions.
+3. When a rule finds an exception, the configured model can draft a correction with references to the relevant policy. Deterministic validation checks the proposal and simulates its effect. If generation or validation fails, the case is escalated for human review.
+4. An HR reviewer checks the punches, schedule, policy evidence, validation results, and proposal, then approves, edits, or rejects it.
+5. An approval or valid edit is checked again against current data before a correction is sent to the attendance provider. A rejection sends no correction. The outcome and audit history remain available for review.
+
+Ask ShiftGuard is a separate read-only experience for questions about authorized cases and policy evidence; it cannot approve or change attendance.
+
 ## What it does
 
 - Detects timecard exceptions using deterministic attendance rules.
@@ -26,7 +42,7 @@ The Policies page is available to signed-in HR users in Supabase mode. It can en
 
 The bundled company provider is synthetic. The real company API contract, webhook signature format, credentials, field mappings, and correction behavior must be agreed and verified with that company. See [the company integration contract](docs/COMPANY_INTEGRATION_CONTRACT.md).
 
-## How the system fits together
+## Architecture and key technical decisions
 
 ```mermaid
 flowchart LR
@@ -46,18 +62,31 @@ flowchart LR
   API --> PG
 ```
 
+The diagram shows the authenticated Supabase workflow. The first-run local demo uses seeded synthetic records in SQLite, the mock attendance provider, and a mock proposal generator. It does not require Supabase or Ollama.
+
+The main technical decisions are:
+
+- **Rules detect; the model proposes.** Deterministic code identifies timekeeping exceptions. An LLM is used only to draft a bounded, policy-grounded suggestion; strict schema and policy checks plus a timecard simulation validate it.
+- **A person controls corrections.** Proposal generation never writes to the attendance system. The API revalidates an HR approval or edit before writeback; rejection does not write a correction.
+- **Events are processed asynchronously.** The signed event endpoint stores an idempotent event and durable job in Supabase, then returns. A separate worker fetches source evidence, analyzes it, and records the result with retry and failure handling.
+- **The source system owns attendance data.** ShiftGuard stores workflow records and minimized evidence needed to review cases. The audit trail records prompt and model-output hashes rather than their full text; retention and deletion policy still require company approval.
+- **Providers separate the prototype from a company connector.** Synthetic providers support development. A generic HTTP adapter defines an integration boundary, but the real company's API mapping, credentials, and correction contract still need to be agreed and tested.
+- **The storage boundary is not production-ready yet.** Supabase mode provides authentication and PostgreSQL workflow storage, but the application still initializes and uses SQLite for core API resources. The production configuration gate therefore refuses startup until those resources are migrated to shared PostgreSQL.
+
+For component responsibilities and validation details, see [the architecture notes](docs/ARCHITECTURE.md). The [company integration contract](docs/COMPANY_INTEGRATION_CONTRACT.md) describes the API shape that must be confirmed with the real vendor.
+
 ## Requirements
 
 For the local synthetic demo:
 
 - macOS, Linux, or another Unix-like environment with `make`
-- Python 3.11 or newer
+- Python 3.11 (the backend CI and OpenAPI contract generation runtime)
 - Node.js 20 or newer and npm
 - Git
 
 For the complete authenticated HR workflow, also install the [Supabase CLI](https://supabase.com/docs/guides/cli) and create a Supabase project. For AI-generated proposals and Ask ShiftGuard, install [Ollama](https://ollama.com/download) and download a model. Docker is optional and only needed for the container workflow.
 
-## Run the local demo
+## Run the local demo (recommended first run)
 
 These steps run the UI and API with a local SQLite database, synthetic attendance fixtures, and the mock LLM. No Supabase project or model download is needed for this first run.
 

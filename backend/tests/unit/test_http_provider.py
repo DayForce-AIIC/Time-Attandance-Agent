@@ -64,7 +64,6 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-
 from app.integrations.http_provider import HttpAttendanceProvider
 from app.integrations.provider import (
     AttendanceProviderError,
@@ -426,9 +425,7 @@ def test_fetch_range_malformed_json_raises_provider_error():
 def test_submit_correction_200_returns_result():
     p = _make_provider()
     with _mock_request(_ok_response(_correction_result_payload())):
-        result = p.submit_correction(
-            _make_correction_request(), idempotency_key="idem-key-001"
-        )
+        result = p.submit_correction(_make_correction_request(), idempotency_key="idem-key-001")
     assert isinstance(result, CorrectionResult)
     assert result.record_ref == RECORD_REF
     assert result.status == "applied"
@@ -526,9 +523,8 @@ def test_factory_returns_mock_provider_when_configured():
 
 
 def test_factory_raises_when_http_provider_missing_base_url():
-    from pydantic import SecretStr
-
     from app.integrations.factory import make_attendance_provider
+    from pydantic import SecretStr
 
     settings = _base_settings().model_copy(
         update={
@@ -558,9 +554,8 @@ def test_factory_raises_when_http_provider_missing_token():
 
 
 def test_factory_raises_when_http_url_is_plain_http_non_localhost():
-    from pydantic import SecretStr
-
     from app.integrations.factory import make_attendance_provider
+    from pydantic import SecretStr
 
     settings = _base_settings().model_copy(
         update={
@@ -575,9 +570,8 @@ def test_factory_raises_when_http_url_is_plain_http_non_localhost():
 
 
 def test_factory_accepts_https_base_url():
-    from pydantic import SecretStr
-
     from app.integrations.factory import make_attendance_provider
+    from pydantic import SecretStr
 
     settings = _base_settings().model_copy(
         update={
@@ -594,9 +588,8 @@ def test_factory_accepts_https_base_url():
 
 
 def test_factory_accepts_http_localhost():
-    from pydantic import SecretStr
-
     from app.integrations.factory import make_attendance_provider
+    from pydantic import SecretStr
 
     settings = _base_settings().model_copy(
         update={

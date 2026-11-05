@@ -51,7 +51,7 @@ def current_principal(
         if settings.demo_api_key:
             auth_header = request.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
-                provided_key = auth_header[len("Bearer "):]
+                provided_key = auth_header[len("Bearer ") :]
             else:
                 provided_key = request.headers.get("X-Api-Key", "")
             if not provided_key or provided_key != settings.demo_api_key:

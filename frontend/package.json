@@ -30,13 +30,18 @@
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.4.1",
     "eslint": "^9.27.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^16.0.0",
     "jsdom": "^26.0.0",
     "openapi-typescript": "^7.6.1",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.32.1",
-    "vite": "^6.3.5",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "^8.72.1",
+    "vite": "^6.4.5",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    }
   }
 }

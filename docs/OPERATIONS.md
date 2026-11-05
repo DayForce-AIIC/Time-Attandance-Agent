@@ -37,7 +37,7 @@ Collect JSON logs from both API and worker. Join a request with background work 
 
 ## Rate limits and alerts
 
-The API has process-local sliding-window limits for Ask ShiftGuard, inbound events, and approval/writeback routes. Defaults are in `.env.example`; `Retry-After` is returned when a request is limited. These protect one process and are defense in depth. Configure shared rate limits at the deployment gateway too, especially when running multiple API replicas. Ensure the gateway forwards the real client address through a trusted configuration before relying on IP-based event limits.
+The API has process-local sliding-window limits for Ask ShiftGuard, proposal generation, inbound events, and approval/writeback routes. Defaults are in `.env.example`; `Retry-After` is returned when a request is limited. These protect one process and are defense in depth. Configure shared rate limits at the deployment gateway too, especially when running multiple API replicas. Ensure the gateway forwards the real client address through a trusted configuration before relying on IP-based event limits.
 
 Repeated worker, Ollama, attendance provider, database intake, and writeback failures emit structured alerts after `OPS_ALERT_FAILURE_THRESHOLD` occurrences in `OPS_ALERT_WINDOW_SECONDS`. If `OPS_ALERT_WEBHOOK_URL` is configured, a JSON POST is sent with the component, safe error code, count, and relevant trace/workflow IDs. `OPS_ALERT_COOLDOWN_SECONDS` prevents repeated notifications. Without a webhook, the alert remains in application logs for the log platform to route.
 
@@ -47,7 +47,11 @@ The webhook URL is a secret and must be configured only in the API/worker secret
 
 Keep `.env` and deployed credentials out of Git and container images. The root `.dockerignore` excludes local env files. Put `SUPABASE_DATABASE_URL`, `ATTENDANCE_API_TOKEN`, `INTEGRATION_WEBHOOK_SECRET`, and `OPS_ALERT_WEBHOOK_URL` in the deployment platform's secret store. Browser configuration contains only the Supabase URL and publishable key.
 
-`ENVIRONMENT=production` prevents startup unless Supabase Auth is enabled, the Supabase URL and database connection use HTTPS/TLS, CORS origins are explicit HTTPS origins, the company provider is `http`, and the configured LLM provider is Ollama. Use `ENVIRONMENT=development` or `staging` with the synthetic provider for rehearsals. Do not use production employee data with a Supabase Free project.
+`ENVIRONMENT=production` rejects demo auth, local or non-TLS endpoints, wildcard or non-HTTPS CORS, mock providers, demo controls, seeding, and a fixed demo clock. The current API still initializes a SQLite store for core resources, so the production gate deliberately refuses to start until that store is moved to shared PostgreSQL. Do not treat Supabase workflow storage alone as completing that migration. Use `ENVIRONMENT=development` or `staging` with synthetic data for rehearsals. Do not use production employee data with a Supabase Free project.
+
+The API contract is generated and checked with Python 3.11, matching `.github/workflows/ci.yml`. The export script rejects other Python versions to avoid cross-version OpenAPI diffs. Install and run the backend with Python 3.11 when regenerating `docs/openapi.json`.
+
+The proposal audit stores prompt and model-output hashes rather than their full text. The organization still needs to approve an audit retention period, access policy, and deletion/archive procedure before real employee data is used. Individual deletion from the SQLite hash chain is not supported; an external tamper-evident anchor is also not configured.
 
 ## Backups and restore drills
 

@@ -27,18 +27,18 @@ from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
-
 from app.analysis_worker import (
     AttendanceAnalysisWorker,
-    PermanentAnalysisError,
-    RetryableAnalysisError,
-    StaleAnalysisError,
 )
 from app.config import Settings
-from app.integrations.provider import AttendanceProviderUnavailable
-from app.llm.base import LLMResult, PromptBundle
+from app.integrations.schemas import (
+    AttendanceRangeEvidence,
+    AttendanceRecord,
+    PunchEvidence,
+    ScheduleEvidence,
+)
+from app.llm.mock import MockClient
 from app.policies import load_policies
-from app.schemas import FaultMode
 
 # ---------------------------------------------------------------------------
 # Helpers — fake repository
@@ -135,7 +135,7 @@ class FakeRepository:
             return None
         return {"id": str(self.latest_event_id)}
 
-    def complete_analysis_job(self, job_id, event_id, *, event_status: str) -> None:
+    def complete_analysis_job(self, job_id, event_id, *, event_status: str = "processed") -> None:
         if self.raise_on_complete:
             raise self.raise_on_complete
         self.completed.append((str(job_id), str(event_id), event_status))
@@ -154,6 +154,13 @@ class FakeRepository:
 
     def get_integration(self, integration_id, organization_id) -> Row:
         return {"id": str(integration_id), "status": "active"}
+
+    def ensure_standard_policies(self, organization_id, policy_book) -> None:
+        del organization_id, policy_book
+
+    def list_organization_policies(self, organization_id) -> list[Row]:
+        del organization_id
+        return []
 
     def supersede_open_cases_for_source(self, **_kw) -> None:
         pass
@@ -305,9 +312,7 @@ def test_process_one_cancels_stale_event_when_newer_exists():
     _, _, error_code = repo.cancelled[0]
     assert error_code == "source_superseded"
     assert repo.failed == []
-    assert any(
-        e["event_type"] == "ANALYSIS_CANCELLED_STALE_SOURCE" for e in repo.audit_events
-    )
+    assert any(e["event_type"] == "ANALYSIS_CANCELLED_STALE_SOURCE" for e in repo.audit_events)
 
 
 def test_retry_or_fail_schedules_retry_on_first_attempt():
@@ -390,9 +395,7 @@ def test_cancel_stale_writes_audit_event():
     worker._cancel_stale(job_id, ORG_ID, EVENT_ID)
 
     assert len(repo.cancelled) == 1
-    assert any(
-        e["event_type"] == "ANALYSIS_CANCELLED_STALE_SOURCE" for e in repo.audit_events
-    )
+    assert any(e["event_type"] == "ANALYSIS_CANCELLED_STALE_SOURCE" for e in repo.audit_events)
 
 
 def test_event_is_current_returns_true_when_ids_match():
@@ -435,8 +438,63 @@ def test_process_one_returns_true_even_when_deleted_event_type():
     assert repo.failed == []
 
 
-def test_process_one_propagates_persistence_failure_on_complete():
-    """If complete_analysis_job raises, the exception must propagate (not be swallowed)."""
+def test_process_one_claims_detects_persists_and_completes_changed_event():
+    """Exercise the successful claim-to-case/proposal persistence path offline."""
+
+    record = AttendanceRecord(
+        record_ref="REC-001",
+        employee_ref="EMP-001",
+        version="v1",
+        updated_at=datetime(2025, 3, 14, 12, tzinfo=timezone.utc),
+        work_date=date(2025, 3, 13),
+        timezone="America/Chicago",
+        jurisdiction="US-STD",
+        ot_eligible=True,
+        schedule=ScheduleEvidence(
+            record_ref="SCHED-001",
+            start=datetime.fromisoformat("2025-03-13T08:00:00-05:00"),
+            end=datetime.fromisoformat("2025-03-13T16:00:00-05:00"),
+            planned_break_minutes=0,
+        ),
+        punches=[
+            PunchEvidence(
+                record_ref="PUNCH-001",
+                kind="IN",
+                at=datetime.fromisoformat("2025-03-13T08:00:00-05:00"),
+                source="device",
+            )
+        ],
+    )
+    range_evidence = AttendanceRangeEvidence(
+        employee_ref="EMP-001",
+        covered_from=date(2025, 3, 3),
+        covered_through=date(2025, 3, 16),
+        coverage_complete=True,
+        records=[record],
+    )
+    provider = MagicMock()
+    provider.fetch_attendance_record.return_value = record
+    provider.fetch_attendance_range.return_value = range_evidence
+    repo = FakeRepository(job_to_claim=_make_job(), event_to_return=_make_event())
+    worker = _make_worker(repo, provider=provider, llm=MockClient())
+
+    assert worker.process_one() is True
+
+    assert len(repo.claimed) == 1
+    assert repo.failed == []
+    assert repo.retried == []
+    assert len(repo.completed) == 1
+    assert repo.completed[0][2] == "processed"
+    event_types = [event["event_type"] for event in repo.audit_events]
+    assert "DETERMINISTIC_DETECTION_COMPLETED" in event_types
+    assert "EXCEPTION_DETECTED" in event_types
+    assert "PROPOSAL_CREATED" in event_types
+    provider.fetch_attendance_record.assert_called_once_with("REC-001", version="v1")
+    provider.fetch_attendance_range.assert_called_once()
+
+
+def test_process_one_records_persistence_failure_without_completing_job():
+    """A failed completion is recorded as a safe failure, never as completed."""
     job = _make_job()
     event = _make_event(event_type="attendance.record.deleted")
     repo = FakeRepository(
@@ -447,5 +505,7 @@ def test_process_one_propagates_persistence_failure_on_complete():
     )
     worker = _make_worker(repo)
 
-    with pytest.raises(RuntimeError, match="db write failed"):
-        worker.process_one()
+    assert worker.process_one() is True
+    assert repo.completed == []
+    assert len(repo.failed) == 1
+    assert repo.failed[0][2] == "analysis_internal_error"

@@ -1,12 +1,15 @@
 """Proposal pipeline integration tests for retries, fallback, and invariants."""
 
+import hashlib
 import json
+from datetime import date
 
 import pytest
 from app import repo
 from app.audit import verify_chain
 from app.clock import Clock
 from app.errors import StateConflict
+from app.llm.base import LLMResult
 from app.llm.faults import FaultInjector
 from app.llm.mock import MockClient
 from app.pipeline import propose
@@ -66,6 +69,60 @@ def test_pipeline_uses_mock_safely_for_injection_note(seeded_conn, settings, boo
     assert result.source == ProposalSource.LLM
     assert result.validation.passed
     assert "Ignore previous instructions" not in result.proposal.explanation
+
+
+def test_audit_log_keeps_prompt_and_raw_model_output_content_out(seeded_conn, settings, book):
+    row = seeded_conn.execute(
+        "SELECT id, employee_id, work_date FROM exceptions "
+        "WHERE employee_id='e-017' AND rule_id='PUNCH-01'"
+    ).fetchone()
+    exception_id = int(row["id"])
+    employee_id = str(row["employee_id"])
+    work_date = date.fromisoformat(str(row["work_date"]))
+    private_note = "PRIVATE_ATTENDANCE_NOTE_SENTINEL"
+    private_output = "PRIVATE_RAW_MODEL_OUTPUT_SENTINEL"
+    repo.insert_employee_note(seeded_conn, employee_id, work_date, private_note)
+
+    class InvalidOutputClient:
+        model = "audit-test-model"
+
+        def generate(self, _bundle, attempt, feedback=None):
+            del attempt, feedback
+            return LLMResult(
+                raw_text=private_output,
+                latency_ms=1,
+                prompt_tokens=11,
+                completion_tokens=3,
+                model=self.model,
+            )
+
+    result = propose(
+        seeded_conn,
+        exception_id,
+        InvalidOutputClient(),
+        Clock(settings),
+        book,
+        settings,
+    )
+    rows = seeded_conn.execute(
+        "SELECT event_type, payload_json FROM audit_log WHERE trace_id=? ORDER BY seq",
+        (result.trace_id,),
+    ).fetchall()
+    payloads = [(str(item["event_type"]), json.loads(item["payload_json"])) for item in rows]
+    rendered = json.dumps(payloads)
+
+    assert private_note not in rendered
+    assert private_output not in rendered
+    prompt_events = [payload for event_type, payload in payloads if event_type == "PROMPT_BUILT"]
+    llm_events = [payload for event_type, payload in payloads if event_type == "LLM_CALL"]
+    assert len(prompt_events) == 2
+    assert all(set(payload) == {"attempt", "prompt_hash"} for payload in prompt_events)
+    assert len(llm_events) == 2
+    assert all(
+        payload["raw_output_hash"] == hashlib.sha256(private_output.encode()).hexdigest()
+        and "raw_text" not in payload
+        for payload in llm_events
+    )
 
 
 def test_pipeline_rejects_terminal_exception_state(seeded_conn, settings, book):

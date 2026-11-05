@@ -7,16 +7,19 @@
 | React + TypeScript frontend | Demo manager queue and authenticated HR queue, case evidence, proposal checks, decisions, metrics, Ask ShiftGuard history, and audit drawer. TanStack Query handles API state; Zod validates responses. |
 | FastAPI API | Exposes `/api/v1` and signed integration routes, verifies Supabase identity in HR mode, maps domain errors, emits request IDs, and limits high-cost routes. The demo manager header is not production authentication. |
 | Rules engine | Pure deterministic checks over punches, schedules, policy thresholds, and the business clock. Produces exceptions and allowed-action/time-window constraints. |
-| SQLite repository | Stores synthetic managers/employees, punches, schedules, exceptions, proposals, decisions, adjustments, and audit events. SQL is isolated in `backend/app/repo.py`. |
+| SQLite demo repository | Stores the local synthetic managers/employees, punches, schedules, exceptions, proposals, decisions, adjustments, and audit events. SQL is isolated in `backend/app/repo.py`. |
+| Supabase workflow repository | Stores authenticated workflow data such as organizations, inbound event references, durable jobs, HR cases, proposals, decisions, writeback status, policies, conversations, and workflow audit events in PostgreSQL. |
 | Policy retrieval and prompt builder | Selects the violated rule and up to two related passages from `backend/app/policies.json`; includes only the case facts and retrieved policy context. Employee notes are sanitized and delimited as untrusted data. |
 | Proposal client and fault injector | Uses the deterministic offline mock by default, with an optional Ollama client. Demo modes mutate or fail model output reproducibly. |
 | Read-only assistant | Retrieves manager-scoped SQLite evidence in demo mode or organization-scoped workflow evidence in HR mode, asks the configured model to answer, validates returned source IDs, and persists HR conversations, model names, timestamps, and citations in Supabase. |
 | Validator and simulation | Parses strict contracts, performs checks V-01–V-10, copies records in memory, applies a candidate, and reruns detection before any manager decision. |
 | Decision service | Checks case ownership and state, validates an approval/edit again, and records the decision plus any correction in a database transaction. Reject writes no timekeeping correction. |
-| Audit and metrics | Records traceable events in a hash chain and computes workflow/safety measures from stored records. |
+| Audit and metrics | Records traceable events in a hash chain and computes workflow/safety measures from stored records. Proposal audit entries keep prompt and raw model-output hashes, not their full text. |
 | Evaluation harness | Runs 48 labelled synthetic cases through the actual detection/proposal pipeline and checks outcomes with an independent oracle. |
 
-The key invariant is that the proposal endpoint does not change punches or schedules. Only a valid `approve` or `edit` decision can apply a correction, and both are revalidated against current data.
+The local demo uses SQLite. The Supabase HR workflow adds authentication and PostgreSQL workflow storage, but the application still initializes and uses SQLite for core API resources in both modes. Supabase workflow storage has not yet replaced the complete application store; the production configuration gate refuses startup until that migration is complete.
+
+The key invariant is that proposal generation does not change punches or schedules. Only a valid `approve` or `edit` decision can apply a correction, and both are revalidated against current data.
 
 `POST /api/v1/assistant/query` is an independent read-only path. It does not call proposal or decision services, does not include employee notes, and does not write case or timecard rows. In HR mode, the question, answer, model, timestamp, and exact cited sources are persisted under the authenticated user and organization. An unavailable Ollama model returns an unavailable response; unknown citations are rejected. Citations are checked, while the semantic accuracy of generated prose is not mechanically proven.
 
@@ -60,7 +63,7 @@ sequenceDiagram
   API->>Policy: Retrieve violated and related passages
   Policy-->>API: Trusted policy passages
   loop At most two attempts
-    API->>Audit: PROMPT_BUILT (prompt hash and prompt text)
+    API->>Audit: PROMPT_BUILT (prompt hash only)
     API->>LLM: Generate from bounded context
     LLM-->>API: JSON output or provider error
     API->>Audit: LLM_CALL / LLM_ERROR
@@ -112,4 +115,4 @@ SQLite triggers reject ordinary `UPDATE` and `DELETE` operations on `audit_log`.
 
 ## Boundaries
 
-The local demo uses seeded synthetic data and SQLite. Supabase mode adds HR identity, a single-organization PostgreSQL workflow store, and an attendance API adapter with signed event intake and approved writeback. Deployment credentials, the real company's contract and sandbox, hosted alert routing, backup schedules, restore drills, timezone policy coverage, payroll calculation, and an external audit anchor still require organization decisions or setup. The app-level rate limits are per process; a deployment gateway must enforce shared limits across replicas.
+The local demo uses seeded synthetic data and SQLite. Supabase mode adds HR identity, a single-organization PostgreSQL workflow store, and an attendance API adapter with signed event intake and approved writeback. The SQLite core-resource store remains a production blocker. Deployment credentials, the real company's contract and sandbox, hosted alert routing, backup schedules, restore drills, timezone policy coverage, payroll calculation, retention/deletion policy, and an external audit anchor still require organization decisions or setup. The app-level rate limits are per process; a deployment gateway must enforce shared limits across replicas.

@@ -20,7 +20,6 @@ from app.policies import load_policies  # noqa: E402
 from app.schemas import PunchKind  # noqa: E402
 from app.seed import seed  # noqa: E402
 
-
 AS_OF = "2025-03-13T20:00"
 WEEK_START = date(2025, 3, 10)
 HISTORY_START = WEEK_START - timedelta(days=7)
