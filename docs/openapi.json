@@ -2389,6 +2389,81 @@
         ]
       }
     },
+    "/api/v1/assistant/query/stream": {
+      "post": {
+        "description": "Stream answer text while preserving the normal evidence retrieval and persistence flow.",
+        "operationId": "assistant_query_stream_api_v1_assistant_query_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantQuestion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stream a manager's read-only attendance answer",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
     "/api/v1/audit/verify": {
       "get": {
         "description": "Recompute and report the integrity of the complete audit chain.",
@@ -3541,8 +3616,21 @@
                   },
                   "record": {
                     "additionalProperties": false,
-                    "description": "Opaque company record identifiers and source version from a webhook.",
+                    "description": "Company record identifiers, optional display name, and source version.",
                     "properties": {
+                      "employee_name": {
+                        "anyOf": [
+                          {
+                            "maxLength": 200,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "title": "Employee Name"
+                      },
                       "employee_ref": {
                         "maxLength": 200,
                         "minLength": 1,

@@ -112,6 +112,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assistant/query/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stream a manager's read-only attendance answer
+         * @description Stream answer text while preserving the normal evidence retrieval and persistence flow.
+         */
+        post: operations["assistant_query_stream_api_v1_assistant_query_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit/verify": {
         parameters: {
             query?: never;
@@ -1447,6 +1467,66 @@ export interface operations {
             };
         };
     };
+    assistant_query_stream_api_v1_assistant_query_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssistantQuestion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     audit_verify_api_v1_audit_verify_get: {
         parameters: {
             query?: never;
@@ -2186,9 +2266,11 @@ export interface operations {
                     occurred_at: string;
                     /**
                      * AttendanceSourceReference
-                     * @description Opaque company record identifiers and source version from a webhook.
+                     * @description Company record identifiers, optional display name, and source version.
                      */
                     record: {
+                        /** Employee Name */
+                        employee_name?: string | null;
                         /** Employee Ref */
                         employee_ref: string;
                         /** Record Ref */

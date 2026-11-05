@@ -147,28 +147,38 @@ describe("manager review components", () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
-      const payload = url.endsWith("/api/v1/health")
-        ? {
+      if (url.endsWith("/api/v1/health")) {
+        const payload = {
             status: "ok",
             provider: "ollama",
             model: "test-ollama",
             llm_reachable: true,
             now: "2025-03-13T20:00",
-          }
-        : {
-            answer: "Priya Raman has an open missing out-punch case.",
-            sources: [{
-              source_id: "case:1",
-              kind: "case",
-              label: "Priya Raman · PUNCH-01 · 2025-03-12",
-              excerpt: "Manager-scoped timecard evidence.",
-              href: "/exceptions/1",
-            }],
-            model: "test-ollama",
-            used_fallback: false,
-            conversation_id: null,
           };
-      return { ok: true, status: 200, text: async () => JSON.stringify(payload) };
+        return { ok: true, status: 200, text: async () => JSON.stringify(payload) };
+      }
+
+      const answer = {
+        answer: "Priya Raman has an open missing out-punch case.",
+        sources: [{
+          source_id: "case:1",
+          kind: "case",
+          label: "Priya Raman · PUNCH-01 · 2025-03-12",
+          excerpt: "Manager-scoped timecard evidence.",
+          href: "/exceptions/1",
+        }],
+        model: "test-ollama",
+        used_fallback: false,
+        conversation_id: null,
+      };
+      const event = `event: complete\ndata: ${JSON.stringify(answer)}\n\n`;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(event));
+          controller.close();
+        },
+      });
+      return { ok: true, status: 200, body };
     }));
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

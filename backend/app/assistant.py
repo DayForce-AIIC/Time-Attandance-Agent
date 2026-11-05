@@ -6,6 +6,7 @@ import json
 import re
 import sqlite3
 from calendar import month_abbr, month_name
+from collections.abc import Sequence
 from datetime import date
 from typing import TYPE_CHECKING, Callable
 from uuid import UUID
@@ -16,7 +17,7 @@ from app import repo
 from app.integrations.provider import AttendanceProviderError
 from app.llm.base import LLMClient, LLMResult, LLMTimeout, LLMUnavailable, PromptBundle
 from app.organization_policies import OrganizationPolicyContext
-from app.policies import PolicyBook, get_rule, retrieve_policies
+from app.policies import PolicyBook, PolicyRule, get_rule, retrieve_policies
 from app.schemas import (
     AssistantAnswer,
     AssistantEvidenceSelection,
@@ -943,7 +944,7 @@ def _list_all_workflow_cases(
         offset += len(page)
 
 
-def _workflow_rule_scores(question: str, rules: list[object]) -> list[tuple[str, int]]:
+def _workflow_rule_scores(question: str, rules: Sequence[PolicyRule]) -> list[tuple[str, int]]:
     """Rank active standard policy rows using their organization-edited text."""
     words = _semantic_terms(question)
     ranked: list[tuple[int, int, str]] = []
@@ -1015,6 +1016,13 @@ def _asks_for_records(
     has_date_match: bool = False,
 ) -> bool:
     """Recognize record lookup intent separately from policy-only questions."""
+    if re.search(
+        r"\b(?:likely|likelihood|probable|probably|predict(?:ion)?|forecast)\b.{0,40}"
+        r"\b(?:absent|absence)\b|\b(?:absent|absence)\b.{0,40}"
+        r"\b(?:likely|likelihood|probable|probably|predict(?:ion)?|forecast)\b",
+        question.casefold(),
+    ):
+        return False
     return bool(
         has_employee_match
         or has_date_match
