@@ -15,6 +15,10 @@ from app.main import app  # noqa: E402
 
 def main() -> None:
     """Write the generated OpenAPI schema with stable formatting."""
+    if sys.version_info[:2] != (3, 11):
+        raise SystemExit(
+            "Generate docs/openapi.json with Python 3.11 to match the pinned CI runtime."
+        )
     destination = REPOSITORY_ROOT / "docs" / "openapi.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(

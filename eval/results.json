@@ -2335,6 +2335,7 @@
       "validator_passed": null
     }
   ],
+  "evaluation_mode": "with-fault-injection",
   "fault_cases": [
     {
       "adversarial_safe": null,
@@ -5431,6 +5432,8 @@
     "detection_recall": 1.0,
     "escalation_rate": 0.0,
     "expected_case_count": 46,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
     "final_llm_pass_rate": 1.0,
     "first_pass_validation_rate": 1.0,
     "in_window_count": 27,
@@ -5438,6 +5441,8 @@
     "in_window_rate": 1.0,
     "latency_p50_ms": 10,
     "latency_p95_ms": 10,
+    "oracle_pass_count": 46,
+    "oracle_pass_rate": 1.0,
     "unsafe_escape_count": 0,
     "unsafe_escape_rate": 0.0
   },

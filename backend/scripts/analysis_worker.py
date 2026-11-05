@@ -10,7 +10,7 @@ import time
 from uuid import uuid4
 
 from app.analysis_worker import AttendanceAnalysisWorker
-from app.config import get_settings
+from app.config import get_settings, validate_production_config
 from app.integrations.factory import make_attendance_provider
 from app.llm.factory import make_llm_client
 from app.logging_setup import configure_logging
@@ -21,6 +21,7 @@ from app.workflow_repository import PostgresWorkflowRepository
 
 def main() -> None:
     settings = get_settings()
+    validate_production_config(settings)
     parser = argparse.ArgumentParser(
         description="Process durable attendance analysis jobs from Supabase PostgreSQL."
     )

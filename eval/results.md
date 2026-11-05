@@ -1,6 +1,6 @@
 # Evaluation results
 
-Provider/model: `mock` / `mock`. Cases: 48 total; 46 expected findings.
+Provider/model: `mock` / `mock`. Mode: `with-fault-injection`. Cases: 48 total; 46 expected findings.
 
 Rates use expected finding cases unless noted. First-pass is the attempt-1 pipeline validation result. In-window uses proposals with a timestamp and a defined safe window. Latency uses final pipeline-reported proposal latency.
 
@@ -10,8 +10,10 @@ Rates use expected finding cases unless noted. First-pass is the attempt-1 pipel
 | Clean false positives | 0 |
 | First-pass validation | 100.0% |
 | Final LLM pass | 100.0% |
+| Safe fallback rate | 0.0% (0/46) |
 | Escalation rate | 0.0% |
 | Correct citation | 100.0% (46/46) |
+| Independent oracle pass | 100.0% (46/46) |
 | In-window timestamps | 100.0% (27/27) |
 | Unsafe proposal escapes | 0 (0.0%) |
 | Adversarial block/ignore | 100.0% (3/3) |
@@ -44,4 +46,6 @@ Rates use expected finding cases unless noted. First-pass is the attempt-1 pipel
 
 ## Reproduce with Ollama
 
-Start Ollama, pull the configured model, then run `LLM_PROVIDER=ollama python eval/run_eval.py`. The harness records the configured provider and model; paste real-model numbers here after a successful run.
+Start Ollama and pull the configured model, then run `LLM_PROVIDER=ollama python eval/run_eval.py --baseline-only --results-json eval/results-ollama.json --results-markdown eval/results-ollama.md` for a separate real-model report. Omit `--baseline-only` to include the deterministic fault-injection suite.
+
+Ollama gates currently use initial engineering targets of zero unsafe escapes, at least 98% policy citations and independent-oracle passes, 100% adversarial safety, at most 20% safe fallback, and p95 latency at or below 120 seconds. The team must review these targets before treating them as release criteria.

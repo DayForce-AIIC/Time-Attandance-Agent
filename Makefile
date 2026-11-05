@@ -1,4 +1,4 @@
-PYTHON ?= python3
+PYTHON ?= python3.11
 VENV ?= .venv
 VENV_PYTHON := $(VENV)/bin/python
 ACTIVE_PYTHON := $(if $(wildcard $(VENV_PYTHON)),$(VENV_PYTHON),$(PYTHON))
